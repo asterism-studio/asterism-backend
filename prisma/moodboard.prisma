@@ -1,0 +1,31 @@
+model MoodboardFolder {
+  id            String   @id @default(uuid()) @db.Uuid
+  profileId     String   @map("profile_id") @db.Uuid
+  name          String   @db.VarChar(40)
+  description   String?  @db.VarChar(160)
+  coverImageUrl String?  @map("cover_image_url") @db.Text
+  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt     DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  profile Profile         @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  items   MoodboardItem[]
+
+  @@index([profileId])
+  @@map("moodboard_folders")
+}
+
+model MoodboardItem {
+  id        String   @id @default(uuid()) @db.Uuid
+  folderId  String   @map("folder_id") @db.Uuid
+  imageId   String   @map("image_id")
+  note      String?  @db.VarChar(300)
+  position  Int      @default(0)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  folder MoodboardFolder @relation(fields: [folderId], references: [id], onDelete: Cascade)
+  image  Image           @relation(fields: [imageId], references: [id], onDelete: Cascade)
+
+  @@unique([folderId, imageId])
+  @@index([imageId])
+  @@map("moodboard_items")
+}

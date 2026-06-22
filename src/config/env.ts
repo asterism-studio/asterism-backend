@@ -12,8 +12,19 @@ const parsePort = (value: string | undefined): number => {
   return port
 }
 
+const requireEnv = (key: string): string => {
+  const value = process.env[key]
+
+  if (!value) {
+    throw new Error(`${key} is required.`)
+  }
+
+  return value
+}
+
 export const env = {
   nodeEnv: process.env.NODE_ENV ?? 'development',
   port: parsePort(process.env.PORT),
-  frontendOrigin: process.env.FRONTEND_ORIGIN ?? 'http://localhost:5173'
+  frontendOrigin: process.env.FRONTEND_ORIGIN ?? 'http://localhost:5173',
+  databaseUrl: requireEnv('DATABASE_URL')
 }
