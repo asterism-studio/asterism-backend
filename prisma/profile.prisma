@@ -1,0 +1,22 @@
+enum ProfileOnboardingStatus {
+  not_started
+  dna_pending
+  completed
+}
+
+model Profile {
+  id               String                  @id @db.Uuid
+  username         String?                 @unique @db.VarChar(32)
+  displayName      String?                 @map("display_name") @db.VarChar(40)
+  avatarUrl        String?                 @map("avatar_url") @db.Text
+  bio              String?                 @db.VarChar(160)
+  preferences      Json?
+  styleDnaResult   Json?                   @map("style_dna_result")
+  onboardingStatus ProfileOnboardingStatus @default(not_started) @map("onboarding_status")
+  createdAt        DateTime                @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt        DateTime                @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  moodboardFolders MoodboardFolder[]
+
+  @@map("profiles")
+}
