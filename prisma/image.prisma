@@ -7,14 +7,12 @@ model Image {
   medium       String?  @db.Text
   subMedium    String?  @map("sub_medium") @db.Text
   colorPalette String[] @default([]) @map("color_palette")
-  source       String   @db.Text
   attribution  String   @db.Text
   confidence   Json
   needsReview  Json     @map("needs_review")
   createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
   excluded     Boolean  @default(false)
 
-  savedBy        SavedImage[]
   moodboardItems MoodboardItem[]
 
   @@index([styleGroup])

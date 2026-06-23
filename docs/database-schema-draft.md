@@ -33,23 +33,11 @@
 | medium | text | no | 媒材 |
 | sub_medium | text | no | 子媒材 |
 | color_palette | text[] | no | 色票或色彩標籤 |
-| source | text | yes | 圖片來源 |
 | attribution | text | yes | 授權或 attribution 資訊 |
 | confidence | jsonb | yes | 分類或標註信心分數 |
 | needs_review | jsonb | yes | 待人工確認的欄位或原因 |
 | created_at | timestamptz | yes | 建立時間 |
 | excluded | boolean | yes | 是否排除於推薦或展示流程 |
-
-## saved_images
-
-使用者收藏圖片的關聯表。
-
-| 欄位 | 型別 | 必填 | 說明 |
-|---|---|---|---|
-| id | uuid | yes | 收藏紀錄 ID |
-| profile_id | uuid | yes | 收藏者 profile ID |
-| image_id | text | yes | 被收藏的圖片 ID |
-| saved_at | timestamptz | yes | 收藏時間 |
 
 ## moodboard_folders
 
@@ -78,17 +66,4 @@ Moodboard 資料夾中的圖片項目。
 | position | integer | yes | 資料夾內排序位置 |
 | created_at | timestamptz | yes | 建立時間 |
 
-## style_dna_results
 
-Style DNA 計算完成後的結果紀錄。
-
-| 欄位 | 型別 | 必填 | 說明 |
-|---|---|---|---|
-| id | uuid | yes | Style DNA result ID |
-| profile_id | uuid | yes | 所屬 profile ID |
-| primary_style | text | yes | 主要風格 |
-| secondary_style | text | no | 次要風格 |
-| style_vector | jsonb | yes | 風格向量或權重資料 |
-| keywords | text[] | no | 風格關鍵字 |
-| summary | text | no | 結果摘要 |
-| created_at | timestamptz | yes | 建立時間 |

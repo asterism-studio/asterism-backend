@@ -66,16 +66,6 @@ CREATE TABLE "profiles" (
 );
 
 -- CreateTable
-CREATE TABLE "saved_images" (
-    "id" UUID NOT NULL,
-    "profile_id" UUID NOT NULL,
-    "image_id" TEXT NOT NULL,
-    "saved_at" TIMESTAMPTZ(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-
-    CONSTRAINT "saved_images_pkey" PRIMARY KEY ("id")
-);
-
--- CreateTable
 CREATE TABLE "style_dna_results" (
     "id" UUID NOT NULL,
     "profile_id" UUID NOT NULL,
@@ -111,12 +101,6 @@ CREATE UNIQUE INDEX "moodboard_items_folder_id_image_id_key" ON "moodboard_items
 CREATE UNIQUE INDEX "profiles_username_key" ON "profiles"("username");
 
 -- CreateIndex
-CREATE INDEX "saved_images_image_id_idx" ON "saved_images"("image_id");
-
--- CreateIndex
-CREATE UNIQUE INDEX "saved_images_profile_id_image_id_key" ON "saved_images"("profile_id", "image_id");
-
--- CreateIndex
 CREATE INDEX "style_dna_results_profile_id_created_at_idx" ON "style_dna_results"("profile_id", "created_at");
 
 -- AddForeignKey
@@ -127,12 +111,6 @@ ALTER TABLE "moodboard_items" ADD CONSTRAINT "moodboard_items_folder_id_fkey" FO
 
 -- AddForeignKey
 ALTER TABLE "moodboard_items" ADD CONSTRAINT "moodboard_items_image_id_fkey" FOREIGN KEY ("image_id") REFERENCES "images"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "saved_images" ADD CONSTRAINT "saved_images_profile_id_fkey" FOREIGN KEY ("profile_id") REFERENCES "profiles"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "saved_images" ADD CONSTRAINT "saved_images_image_id_fkey" FOREIGN KEY ("image_id") REFERENCES "images"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "style_dna_results" ADD CONSTRAINT "style_dna_results_profile_id_fkey" FOREIGN KEY ("profile_id") REFERENCES "profiles"("id") ON DELETE CASCADE ON UPDATE CASCADE;
