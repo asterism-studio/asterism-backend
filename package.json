@@ -11,7 +11,10 @@
     "db:generate": "prisma generate",
     "db:validate": "prisma validate",
     "db:format": "prisma format",
-    "db:migrate": "prisma migrate dev"
+    "db:migrate": "prisma migrate dev",
+    "enrich:images": "tsx scripts/enrich/index.ts",
+    "reclassify:submedium": "tsx scripts/reclassifySubMedium.ts",
+    "recompute:needs-review": "tsx scripts/recomputeNeedsReview.ts"
   },
   "keywords": [],
   "author": "",
@@ -27,9 +30,11 @@
     "prisma": "^7.8.0"
   },
   "devDependencies": {
+    "@huggingface/transformers": "^4.2.0",
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.6",
     "@types/node": "^26.0.0",
+    "node-vibrant": "^4.0.4",
     "tsx": "^4.22.4",
     "typescript": "^6.0.3"
   }
