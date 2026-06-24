@@ -1,77 +1,38 @@
 # Asterism Backend
 
-Asterism Backend 是 Asterism 專案的後端 API 服務，負責處理使用者驗證、Moodboard 資料管理，以及未來的圖片推薦與 AI 模型相關功能。
+Asterism Backend 是 Asterism 的後端工作區，負責 **Express 基礎 API、Prisma Migration、資料匯入、圖片分析 pipeline**，並保留未來金流與 AI worker 的擴充位置。
+
+目前架構方向是 **Supabase-first + Backend Worker Repo**：一般 app runtime 資料優先交給 Supabase + RLS，Backend Repo 只處理不適合放前端或 Supabase client 的工作。
 
 ---
 
-## 環境需求
+## 架構分工
 
-請先確認已安裝：
+| 區塊 | 負責 |
+|---|---|
+| Frontend | UI、Pinia、service layer、呼叫 Supabase / backend API |
+| Supabase | Auth、PostgreSQL、PostgREST、RLS、Storage |
+| Backend Repo | migration、seed、CLIP pipeline、webhook、批次 worker |
 
-* Node.js
-* npm
+```text
+Frontend
+→ Supabase Auth / Auto API / Storage / RLS
+→ PostgreSQL
 
----
-
-## 安裝專案
-
-```bash
-npm install
-```
-
----
-
-## 環境變數設定
-
-請在專案根目錄建立 `.env` 檔案。
-
-可以先複製範例檔：
-
-```bash
-cp .env.example .env
-```
-
-`.env` 內至少需要設定：
-
-```env
-NODE_ENV=development
-PORT=3001
-FRONTEND_ORIGIN=http://localhost:5173
-```
-
-> 注意：`.env` 不應提交到 Git。
-
----
-
-## 啟動開發伺服器
-
-```bash
-npm run dev
-```
-
-啟動成功後，API server 會運行在：
-
-```txt
-http://localhost:3001
+Backend Repo
+→ Prisma Migration / seed / CLIP / webhook
+→ PostgreSQL
 ```
 
 ---
 
-## 檢查服務狀態
+## 目前 API
 
-可以使用以下 API 確認後端是否正常啟動：
+| Method | Path | 說明 |
+|---|---|---|
+| GET | `/api/v1/health` | 健康檢查 |
 
-```txt
-GET /api/v1/health
-```
-
-範例：
-
-```bash
-curl http://localhost:3001/api/v1/health
-```
-
-成功時會回傳：
+成功回應：
 
 ```json
 {
@@ -86,75 +47,74 @@ curl http://localhost:3001/api/v1/health
 
 ---
 
-## 目前 API 範圍
-
-目前已實作：
-
-```txt
-GET /api/v1/health
-```
-
----
-
-## 常用指令
+## 專案指令
 
 ```bash
-# 啟動開發伺服器
+npm install
 npm run dev
-
-# 檢查 TypeScript 型別
 npm run typecheck
-
-# 建立 production build
 npm run build
-
-# 執行 build 後的 server
 npm run start
 ```
 
----
+資料庫相關：
 
-## API 回應格式
-
-成功時：
-
-```json
-{
-  "success": true,
-  "data": {},
-  "error": null
-}
+```bash
+npm run db:generate
+npm run db:validate
+npm run db:format
+npm run db:migrate
 ```
 
-失敗時：
+圖片分析相關：
 
-```json
-{
-  "success": false,
-  "data": null,
-  "error": {
-    "code": "ERROR_CODE",
-    "message": "Error message."
-  }
-}
+```bash
+npm run enrich:images
+npm run reclassify:submedium
+npm run recompute:needs-review
 ```
 
 ---
 
-## 開發注意事項
+## 環境變數
 
-* 不要提交 `.env`
-* 不要直接把資料庫帳號、JWT secret 等敏感資訊寫死在程式碼中
-* 新增 API 時，請保持統一的 response 格式
-* Request body 請先做資料驗證
-* 新功能請從獨立分支開發，並透過 PR 合併
+請在專案根目錄建立 `.env`。至少需要：
+
+```env
+NODE_ENV=development
+PORT=3001
+FRONTEND_ORIGIN=http://localhost:5173
+DATABASE_URL=postgresql://user:password@localhost:5432/asterism
+```
+
+> `.env` 不應提交到 Git。
 
 ---
 
-## 相關文件
+## 文件索引
 
-API 規格請參考 Swagger 文件：
+| 文件 | 用途 |
+|---|---|
+| [docs/asterism-backend-architecture.md](docs/asterism-backend-architecture.md) | 後端目標架構、責任邊界、資料來源原則 |
+| [docs/asterism-backend-flows.md](docs/asterism-backend-flows.md) | Auth、Style DNA、Moodboard、圖片、金流流程圖 |
+| [docs/database-schema-draft.md](docs/database-schema-draft.md) | MVP database schema 草稿 |
 
-```txt
+---
+
+## 開發原則
+
+- 不直接提交 `.env` 或 secret。
+- Schema 修改走 Prisma Migration。
+- 一般 CRUD 優先走 Supabase Auto API + RLS。
+- 需要 secret、webhook、批次或 AI pipeline 的流程才放 Backend Repo。
+- 新增 API 時維持統一 response format。
+
+---
+
+## 外部規格
+
+API contract:
+
+```text
 https://app.swaggerhub.com/apis-docs/asterism/asterism-api-contract/0.1.0
 ```
