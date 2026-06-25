@@ -13,6 +13,7 @@ model Profile {
   preferences      Json?
   styleDnaResult   Json?                   @map("style_dna_result")
   onboardingStatus ProfileOnboardingStatus @default(not_started) @map("onboarding_status")
+  isAdmin          Boolean                 @default(false) @map("is_admin")
   createdAt        DateTime                @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt        DateTime                @updatedAt @map("updated_at") @db.Timestamptz(6)
 
