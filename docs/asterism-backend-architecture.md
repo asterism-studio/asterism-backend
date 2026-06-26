@@ -70,7 +70,7 @@ flowchart LR
     AutoApi[Auto-generated API\nPostgREST]
     RLS[RLS Policies\n資料權限規則]
     DB[(PostgreSQL\npublic app tables)]
-    Triggers[Database Triggers / Functions\nprofile / moodboard 初始化]
+    Triggers[Database Triggers / Functions\nprofile 初始化]
     Storage[(Supabase Storage\nwebp / image assets)]
   end
 
@@ -332,8 +332,8 @@ flowchart TD
 ## 10. 建議開發順序
 
 ```text
-Phase 1：確認 Supabase Auth + profiles / default moodboard trigger
-Phase 2：確認 RLS policies 可正確限制 profile / moodboard / payment 資料
+Phase 1：確認 Supabase Auth + profiles trigger
+Phase 2：確認 RLS policies 可正確限制 profile / moodboard 資料
 Phase 3：將 style-data.json seed 到 images table
 Phase 4：前端 image.service.ts 改成 Supabase 優先，JSON fallback
 Phase 5：串接 Style DNA result 保存 / 讀取
