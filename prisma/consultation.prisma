@@ -75,3 +75,14 @@ model ConsultationPayment {
 
   @@map("consultation_payments")
 }
+
+model StripeWebhookEvent {
+  id            String    @id @default(uuid()) @db.Uuid
+  stripeEventId String    @unique @map("stripe_event_id") @db.Text
+  eventType     String    @map("event_type") @db.Text
+  payload       Json
+  processedAt   DateTime? @map("processed_at") @db.Timestamptz(6)
+  createdAt     DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@map("stripe_webhook_events")
+}
