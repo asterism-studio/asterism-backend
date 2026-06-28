@@ -31,6 +31,7 @@ enum ConsultationPaymentStatus {
 model ConsultationBooking {
   id                String                    @id @default(uuid()) @db.Uuid
   profileId         String                    @map("profile_id") @db.Uuid
+  consultantId      String?                   @map("consultant_id") @db.Uuid
   sourceImageId     String?                   @map("source_image_id") @db.Text
   method            ConsultationMethod
   consultationDate  DateTime                  @map("consultation_date") @db.Date
@@ -46,11 +47,13 @@ model ConsultationBooking {
   createdAt         DateTime                  @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt         DateTime                  @updatedAt @map("updated_at") @db.Timestamptz(6)
 
-  profile     Profile @relation(fields: [profileId], references: [id], onDelete: Cascade)
-  sourceImage Image?  @relation(fields: [sourceImageId], references: [id], onDelete: SetNull)
+  profile     Profile     @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  consultant  Consultant? @relation(fields: [consultantId], references: [id], onDelete: SetNull)
+  sourceImage Image?      @relation(fields: [sourceImageId], references: [id], onDelete: SetNull)
   payment     ConsultationPayment?
 
   @@index([profileId])
+  @@index([consultantId])
   @@index([sourceImageId])
   @@map("consultation_bookings")
 }
