@@ -95,6 +95,7 @@ model StripeWebhookEvent {
   eventType     String    @map("event_type") @db.Text
   payload       Json
   processedAt   DateTime? @map("processed_at") @db.Timestamptz(6)
+  processingError String?   @map("processing_error") @db.Text
   createdAt     DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
 
   @@map("stripe_webhook_events")

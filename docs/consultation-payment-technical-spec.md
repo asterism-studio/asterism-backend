@@ -291,7 +291,8 @@ consultant   Consultant? @relation(
 | `stripe_event_id` | `text` | Stripe event id，Unique |
 | `event_type` | `text` | 例如 `checkout.session.completed` |
 | `payload` | `jsonb` | 原始事件 payload |
-| `processed_at` | `timestamptz` | Nullable |
+| `processed_at` | `timestamptz` | Nullable，處理時間 |
+| `processing_error` | `text` | Nullable，處理失敗原因 |
 | `created_at` | `timestamptz` | 建立時間 |
 
 ### 4.5 DB Constraints
