@@ -67,10 +67,20 @@ model ConsultationPayment {
   providerPaymentIntentId   String?                     @unique @map("provider_payment_intent_id") @db.Text
   /// Must be greater than 0. Enforced by the combined Prisma Migration.
   amount                    Int                         @db.Integer
-  currency                  String                      @default("TWD") @db.Text
+  /// MVP only supports TWD.
+  currency                  String                      @default("TWD") @db.VarChar(3)
   status                    ConsultationPaymentStatus   @default(pending)
+
   checkoutExpiresAt         DateTime?                   @map("checkout_expires_at") @db.Timestamptz(6)
   paidAt                    DateTime?                   @map("paid_at") @db.Timestamptz(6)
+
+  refundedAt                DateTime?                   @map("refunded_at") @db.Timestamptz(6)
+  providerRefundId          String?                     @unique @map("provider_refund_id") @db.Text
+
+  failedAt                  DateTime?                   @map("failed_at") @db.Timestamptz(6)
+  canceledAt                DateTime?                   @map("canceled_at") @db.Timestamptz(6)
+  failureReason             String?                     @map("failure_reason") @db.Text
+
   createdAt                 DateTime                    @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt                 DateTime                    @updatedAt @map("updated_at") @db.Timestamptz(6)
 

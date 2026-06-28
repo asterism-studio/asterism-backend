@@ -271,10 +271,15 @@ consultant   Consultant? @relation(
 | `provider_checkout_session_id` | `text` | Stripe Checkout Session ID，Unique |
 | `provider_payment_intent_id` | `text` | Stripe Payment Intent ID，Unique, Nullable |
 | `amount` | `integer` | 後端紀錄的本次收款金額 |
-| `currency` | `text` | 預設 `TWD` |
+| `currency` | `varchar(3)` | 預設 `TWD`，MVP 僅支援 TWD |
 | `status` | `text` | `pending` / `paid` / `failed` / `canceled` / `refunded` |
 | `checkout_expires_at` | `timestamptz` | Nullable |
 | `paid_at` | `timestamptz` | Nullable |
+| `refunded_at` | `timestamptz` | Nullable，退款完成時間 |
+| `provider_refund_id` | `text` | Stripe Refund ID，Unique, Nullable |
+| `failed_at` | `timestamptz` | Nullable，付款失敗時間 |
+| `canceled_at` | `timestamptz` | Nullable，付款取消時間 |
+| `failure_reason` | `text` | Nullable，付款失敗原因 |
 | `created_at` | `timestamptz` | 建立時間 |
 | `updated_at` | `timestamptz` | 更新時間 |
 
