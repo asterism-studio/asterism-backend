@@ -36,18 +36,18 @@ model ConsultationBooking {
   method            ConsultationMethod
   consultationDate  DateTime                  @map("consultation_date") @db.Date
   timeSlot          ConsultationTimeSlot      @map("time_slot")
-  timezone          String                    @default("Asia/Taipei") @db.Text
   designField       String?                   @map("design_field") @db.Text
   designFocus       String?                   @map("design_focus") @db.Text
   contactName       String?                   @map("contact_name") @db.Text
-  contactEmail      String                    @map("contact_email") @db.Text
+  contactEmail      String                   @map("contact_email") @db.Text
+  contactPhone      String?                   @map("contact_phone") @db.Text
   notes             String?                   @db.Text
-  depositAcceptedAt DateTime                  @map("deposit_accepted_at") @db.Timestamptz(6)
+  paymentConsentAcceptedAt DateTime                  @map("payment_consent_accepted_at") @db.Timestamptz(6)
   status            ConsultationBookingStatus @default(pending_payment)
   createdAt         DateTime                  @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt         DateTime                  @updatedAt @map("updated_at") @db.Timestamptz(6)
 
-  profile     Profile     @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  profile     Profile     @relation(fields: [profileId], references: [id], onDelete: Restrict)
   consultant  Consultant? @relation(fields: [consultantId], references: [id], onDelete: SetNull)
   sourceImage Image?      @relation(fields: [sourceImageId], references: [id], onDelete: SetNull)
   payment     ConsultationPayment?

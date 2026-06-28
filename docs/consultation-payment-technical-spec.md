@@ -101,7 +101,7 @@ interface CreateConsultationCheckoutPayload {
 | `designFocus` | `design_focus` | Nullable |
 | `sourceImageId` | `source_image_id` | Nullable，從 `/consultant?sourceImageId=:imageId` 帶入 |
 | `notes` | `notes` | Nullable |
-| `depositAccepted` | `deposit_accepted_at` | 必須為 `true`，後端落庫為 timestamp |
+| `paymentConsentAcceptedAt` | `payment_consent_accepted_at` | 必須為 `true`，後端落庫為 timestamp |
 | access token | `profile_id` | 後端由 Supabase token 解析 |
 | profile / auth | `contact_name`、`contact_email` | 後端產生當下快照，不信任前端輸入 |
 | profile `style_dna_result` | `consultant_id` | 後端媒合 active consultant 後寫入 |
@@ -234,13 +234,13 @@ model Consultant {
 | `method` | `text` | `online` / `in_person` |
 | `consultation_date` | `date` | 預約日期 |
 | `time_slot` | `text` | `am` / `pm` |
-| `timezone` | `text` | 預設 `Asia/Taipei` |
+| ~~`timezone`~~ | ~~`text`~~ | ~~預設 `Asia/Taipei`~~ |
 | `design_field` | `text` | Nullable |
 | `design_focus` | `text` | Nullable |
 | `contact_name` | `text` | 後端由 profile 產生的快照，Nullable |
 | `contact_email` | `text` | 後端由 Auth user email 產生的快照 |
 | `notes` | `text` | Nullable |
-| `deposit_accepted_at` | `timestamptz` | 使用者同意 NT$500 deposit 的時間 |
+| `payment_consent_accepted_at` | `timestamptz` | 使用者同意 NT$500 deposit 的時間 |
 | `status` | `text` | `pending_payment` / `confirmed` / `payment_failed` / `canceled` / `completed` |
 | `created_at` | `timestamptz` | 建立時間 |
 | `updated_at` | `timestamptz` | 更新時間 |
@@ -296,7 +296,7 @@ ALTER TABLE consultation_bookings
   ADD CONSTRAINT chk_consultation_method CHECK (method IN ('online', 'in_person')),
   ADD CONSTRAINT chk_consultation_time_slot CHECK (time_slot IN ('am', 'pm')),
   ADD CONSTRAINT chk_consultation_status CHECK (status IN ('pending_payment', 'confirmed', 'payment_failed', 'canceled', 'completed')),
-  ADD CONSTRAINT chk_consultation_deposit_accepted CHECK (deposit_accepted_at IS NOT NULL);
+  ADD CONSTRAINT chk_consultation_deposit_accepted CHECK (payment_consent_accepted_at IS NOT NULL);
 
 ALTER TABLE consultation_payments
   ADD CONSTRAINT chk_consultation_payment_provider CHECK (provider IN ('stripe')),
