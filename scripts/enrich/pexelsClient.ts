@@ -10,13 +10,13 @@ interface PexelsPhoto {
 }
 
 // 需要環境變數 PEXELS_API_KEY（Pexels 免費申請）。
-export async function searchPexels(query: string, perPage = 15): Promise<GalleryMeta[]> {
+export async function searchPexels(query: string, perPage = 15, page = 1): Promise<GalleryMeta[]> {
   const apiKey = process.env.PEXELS_API_KEY;
   if (!apiKey) {
     throw new Error('PEXELS_API_KEY 未設定');
   }
 
-  const url = `${PEXELS_ENDPOINT}?query=${encodeURIComponent(query)}&per_page=${perPage}`;
+  const url = `${PEXELS_ENDPOINT}?query=${encodeURIComponent(query)}&per_page=${perPage}&page=${page}`;
   const response = await fetch(url, { headers: { Authorization: apiKey } });
   if (!response.ok) {
     throw new Error(`Pexels API 失敗：${response.status}`);

@@ -10,13 +10,13 @@ interface UnsplashPhoto {
 }
 
 // 需要環境變數 UNSPLASH_ACCESS_KEY（Unsplash Developers 免費申請）。
-export async function searchUnsplash(query: string, perPage = 15): Promise<GalleryMeta[]> {
+export async function searchUnsplash(query: string, perPage = 15, page = 1): Promise<GalleryMeta[]> {
   const accessKey = process.env.UNSPLASH_ACCESS_KEY;
   if (!accessKey) {
     throw new Error('UNSPLASH_ACCESS_KEY 未設定');
   }
 
-  const url = `${UNSPLASH_ENDPOINT}?query=${encodeURIComponent(query)}&per_page=${perPage}`;
+  const url = `${UNSPLASH_ENDPOINT}?query=${encodeURIComponent(query)}&per_page=${perPage}&page=${page}`;
   const response = await fetch(url, {
     headers: { Authorization: `Client-ID ${accessKey}` }
   });
