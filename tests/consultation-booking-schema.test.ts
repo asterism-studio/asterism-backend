@@ -39,11 +39,14 @@ test('Prisma schema defines the consultation booking contract', async () => {
     schema,
     /consultationDate\s+DateTime\s+@map\("consultation_date"\)\s+@db\.Date/
   )
-  assert.match(schema, /timezone\s+String\s+@default\("Asia\/Taipei"\)/)
   assert.match(schema, /contactEmail\s+String\s+@map\("contact_email"\)/)
   assert.match(
     schema,
-    /depositAcceptedAt\s+DateTime\s+@map\("deposit_accepted_at"\)\s+@db\.Timestamptz\(6\)/
+    /contactPhone\s+String\?\s+@map\("contact_phone"\)\s+@db\.Text/
+  )
+  assert.match(
+    schema,
+    /paymentConsentAcceptedAt\s+DateTime\s+@map\("payment_consent_accepted_at"\)\s+@db\.Timestamptz\(6\)/
   )
   assert.match(
     schema,
@@ -51,7 +54,7 @@ test('Prisma schema defines the consultation booking contract', async () => {
   )
   assert.match(
     schema,
-    /profile\s+Profile\s+@relation\(fields: \[profileId\], references: \[id\], onDelete: Cascade\)/
+    /profile\s+Profile\s+@relation\(fields: \[profileId\], references: \[id\], onDelete: Restrict\)/
   )
   assert.match(
     schema,
