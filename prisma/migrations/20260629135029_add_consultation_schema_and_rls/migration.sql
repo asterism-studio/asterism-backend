@@ -106,6 +106,9 @@ CREATE INDEX "consultation_bookings_consultant_id_idx" ON "consultation_bookings
 CREATE INDEX "consultation_bookings_source_image_id_idx" ON "consultation_bookings"("source_image_id");
 
 -- CreateIndex
+CREATE INDEX "consultation_bookings_consultation_date_time_slot_idx" ON "consultation_bookings"("consultation_date", "time_slot");
+
+-- CreateIndex
 CREATE UNIQUE INDEX "consultation_payments_booking_id_key" ON "consultation_payments"("booking_id");
 
 -- CreateIndex

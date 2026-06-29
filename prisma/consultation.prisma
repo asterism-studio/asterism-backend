@@ -55,6 +55,7 @@ model ConsultationBooking {
   @@index([profileId])
   @@index([consultantId])
   @@index([sourceImageId])
+  @@index([consultationDate, timeSlot])
   @@map("consultation_bookings")
 }
 

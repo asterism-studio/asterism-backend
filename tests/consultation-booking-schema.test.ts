@@ -4,6 +4,7 @@ import path from 'node:path'
 import test from 'node:test'
 
 const prismaDirectory = path.resolve('prisma')
+const migrationsDirectory = path.resolve('prisma/migrations')
 
 const readPrismaSchema = async () => {
   const entries = await readdir(prismaDirectory)
@@ -11,6 +12,20 @@ const readPrismaSchema = async () => {
   const contents = await Promise.all(
     schemaFiles.map((entry) =>
       readFile(path.join(prismaDirectory, entry), 'utf8')
+    )
+  )
+
+  return contents.join('\n')
+}
+
+const readMigrationSql = async () => {
+  const entries = await readdir(migrationsDirectory, { recursive: true })
+  const sqlFiles = entries.filter((entry) =>
+    String(entry).endsWith('migration.sql')
+  )
+  const contents = await Promise.all(
+    sqlFiles.map((entry) =>
+      readFile(path.join(migrationsDirectory, String(entry)), 'utf8')
     )
   )
 
@@ -39,6 +54,7 @@ test('Prisma schema defines the consultation booking contract', async () => {
     schema,
     /consultationDate\s+DateTime\s+@map\("consultation_date"\)\s+@db\.Date/
   )
+  assert.match(schema, /timeSlot\s+ConsultationTimeSlot\s+@map\("time_slot"\)/)
   assert.match(schema, /contactEmail\s+String\s+@map\("contact_email"\)/)
   assert.match(
     schema,
@@ -59,5 +75,15 @@ test('Prisma schema defines the consultation booking contract', async () => {
   assert.match(
     schema,
     /sourceImage\s+Image\?\s+@relation\(fields: \[sourceImageId\], references: \[id\], onDelete: SetNull\)/
+  )
+  assert.match(schema, /@@index\(\[consultationDate, timeSlot\]\)/)
+})
+
+test('Migration SQL adds the consultation booking date and slot index', async () => {
+  const migrationSql = await readMigrationSql()
+
+  assert.match(
+    migrationSql,
+    /CREATE INDEX "consultation_bookings_consultation_date_time_slot_idx" ON "consultation_bookings"\("consultation_date", "time_slot"\);/
   )
 })
