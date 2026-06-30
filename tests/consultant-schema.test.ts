@@ -23,6 +23,10 @@ test('Prisma schema defines the consultant contract', async () => {
   assert.match(schema, /model Consultant \{/)
   assert.match(
     schema,
+    /enum ConsultantSpecialty \{\s+spatial\s+visual_styling\s+concept_design\s+\}/
+  )
+  assert.match(
+    schema,
     /displayName\s+String\s+@map\("display_name"\)\s+@db\.VarChar\(80\)/
   )
   assert.match(schema, /title\s+String\s+@db\.VarChar\(80\)/)
@@ -31,7 +35,7 @@ test('Prisma schema defines the consultant contract', async () => {
     /avatarUrl\s+String\?\s+@map\("avatar_url"\)\s+@db\.Text/
   )
   assert.match(schema, /bio\s+String\?\s+@db\.Text/)
-  assert.match(schema, /specialty\s+String\?\s+@db\.Text/)
+  assert.match(schema, /specialty\s+ConsultantSpecialty\?/)
   assert.match(
     schema,
     /isActive\s+Boolean\s+@default\(true\)\s+@map\("is_active"\)/
