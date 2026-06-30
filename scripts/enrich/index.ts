@@ -23,16 +23,27 @@ async function main(): Promise<void> {
     const scorer = await createClipScorer();
     const allRows: ImageRow[] = [];
     let skipped = 0;
+    let totalInserted = 0;
 
     for (const [styleGroup, anchorPrompt] of Object.entries(STYLE_GROUP_ANCHORS)) {
       // 每個 styleGroup 再依 medium 各搜一次，補足各媒材的圖；
       // query 帶上 medium 只是「偏向去抓該媒材」，分類仍由 CLIP 依圖片本身判定。
       for (const medium of MEDIUM_LABELS) {
         const query = `${anchorPrompt} ${medium}`;
-        const [pexelsResults, unsplashResults] = await Promise.all([
+        // allSettled：單一來源（Pexels/Unsplash）整批失敗（如 rate limit / 網路）只略過該來源，
+        // 不讓整個 main() throw，後續 styleGroup / medium 仍會繼續跑。
+        const [pexelsSettled, unsplashSettled] = await Promise.allSettled([
           searchPexels(query, IMAGES_PER_SOURCE, PAGE),
           searchUnsplash(query, IMAGES_PER_SOURCE, PAGE)
         ]);
+        if (pexelsSettled.status === 'rejected') {
+          console.warn(`[${styleGroup} / ${medium}] Pexels 搜尋失敗：`, pexelsSettled.reason);
+        }
+        if (unsplashSettled.status === 'rejected') {
+          console.warn(`[${styleGroup} / ${medium}] Unsplash 搜尋失敗：`, unsplashSettled.reason);
+        }
+        const pexelsResults = pexelsSettled.status === 'fulfilled' ? pexelsSettled.value : [];
+        const unsplashResults = unsplashSettled.status === 'fulfilled' ? unsplashSettled.value : [];
 
         const groupRows: ImageRow[] = [];
         for (const meta of [...pexelsResults, ...unsplashResults]) {
@@ -48,9 +59,13 @@ async function main(): Promise<void> {
         }
 
         // 每組合各寫一次：後面失敗，前面已處理的仍已入庫（insertImageRows 為 ON CONFLICT DO NOTHING，可重跑）。
-        await insertImageRows(pool, groupRows);
+        const inserted = await insertImageRows(pool, groupRows);
+        totalInserted += inserted;
         allRows.push(...groupRows);
-        console.log(`[p${PAGE}][${styleGroup} / ${medium}] 入庫 ${groupRows.length} 張`);
+        // groupRows 是候選數；inserted 才是實際新增（撞 id 的會被 ON CONFLICT 略過）。
+        console.log(
+          `[p${PAGE}][${styleGroup} / ${medium}] 候選 ${groupRows.length} 張，實際入庫 ${inserted} 張`
+        );
       }
     }
 
@@ -58,13 +73,25 @@ async function main(): Promise<void> {
       acc[row.style_group] = (acc[row.style_group] ?? 0) + 1;
       return acc;
     }, {});
+    // styleGroup × medium 二維分布：看每個風格群組實際長出了哪些媒材、各幾張（CLIP 判定結果）。
+    const groupMediumDistribution = allRows.reduce<Record<string, Record<string, number>>>(
+      (acc, row) => {
+        const byMedium = (acc[row.style_group] ??= {});
+        const medium = row.medium ?? '(none)';
+        byMedium[medium] = (byMedium[medium] ?? 0) + 1;
+        return acc;
+      },
+      {}
+    );
     const needsReviewCount = allRows.filter(
       (row) => row.needs_review.styleGroup || row.needs_review.medium || row.needs_review.subMedium
     ).length;
 
-    console.log('分類分佈：', distribution);
+    console.log('分類分佈（styleGroup）：', distribution);
+    console.log('分類分佈（styleGroup × medium）：', groupMediumDistribution);
+    // allRows.length 是候選總數；totalInserted 才是這次實際新增（其餘為重跑撞 id 略過）。
     console.log(
-      `第 ${PAGE} 頁 入庫總數：${allRows.length}，略過 ${skipped} 張，needsReview ${needsReviewCount} 筆`
+      `第 ${PAGE} 頁 候選總數：${allRows.length}，實際入庫 ${totalInserted} 張，略過 ${skipped} 張，needsReview ${needsReviewCount} 筆`
     );
   } finally {
     await pool.end();
