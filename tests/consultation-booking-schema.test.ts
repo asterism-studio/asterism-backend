@@ -76,14 +76,14 @@ test('Prisma schema defines the consultation booking contract', async () => {
     schema,
     /sourceImage\s+Image\?\s+@relation\(fields: \[sourceImageId\], references: \[id\], onDelete: SetNull\)/
   )
-  assert.match(schema, /@@index\(\[consultationDate, timeSlot\]\)/)
+  assert.doesNotMatch(schema, /@@index\(\[consultationDate, timeSlot\]\)/)
 })
 
-test('Migration SQL adds the consultation booking date and slot index', async () => {
+test('Migration SQL adds the active consultation booking slot lock', async () => {
   const migrationSql = await readMigrationSql()
 
   assert.match(
     migrationSql,
-    /CREATE INDEX "consultation_bookings_consultation_date_time_slot_idx" ON "consultation_bookings"\("consultation_date", "time_slot"\);/
+    /CREATE UNIQUE INDEX "consultation_bookings_slot_unique" ON "consultation_bookings"\("consultation_date", "time_slot"\) WHERE "status" IN \('confirmed', 'completed'\);/
   )
 })

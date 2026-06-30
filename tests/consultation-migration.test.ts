@@ -32,6 +32,10 @@ test('consultation migration creates the schema and locks it down with RLS', asy
 
   assert.match(sql, /CHECK \("amount" > 0\)/)
   assert.match(sql, /CHECK \("currency" = 'TWD'\)/)
+  assert.match(
+    sql,
+    /CREATE UNIQUE INDEX "consultation_bookings_slot_unique" ON "consultation_bookings"\("consultation_date", "time_slot"\) WHERE "status" IN \('confirmed', 'completed'\);/
+  )
   assert.match(sql, /CREATE POLICY "consultants_public_read_active"/)
   assert.match(
     sql,

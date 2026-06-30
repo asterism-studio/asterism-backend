@@ -13,6 +13,9 @@ CREATE TYPE "ConsultationPaymentProvider" AS ENUM ('stripe');
 -- CreateEnum
 CREATE TYPE "ConsultationPaymentStatus" AS ENUM ('pending', 'paid', 'failed', 'canceled', 'refunded');
 
+-- CreateEnum
+CREATE TYPE "ConsultantSpecialty" AS ENUM ('spatial', 'visual_styling', 'concept_design');
+
 -- CreateTable
 CREATE TABLE "consultants" (
     "id" UUID NOT NULL,
@@ -20,7 +23,7 @@ CREATE TABLE "consultants" (
     "title" VARCHAR(80) NOT NULL,
     "avatar_url" TEXT,
     "bio" TEXT,
-    "specialty" TEXT,
+    "specialty" "ConsultantSpecialty",
     "is_active" BOOLEAN NOT NULL DEFAULT true,
     "created_at" TIMESTAMPTZ(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMPTZ(6) NOT NULL,
@@ -106,7 +109,7 @@ CREATE INDEX "consultation_bookings_consultant_id_idx" ON "consultation_bookings
 CREATE INDEX "consultation_bookings_source_image_id_idx" ON "consultation_bookings"("source_image_id");
 
 -- CreateIndex
-CREATE INDEX "consultation_bookings_consultation_date_time_slot_idx" ON "consultation_bookings"("consultation_date", "time_slot");
+CREATE UNIQUE INDEX "consultation_bookings_slot_unique" ON "consultation_bookings"("consultation_date", "time_slot") WHERE "status" IN ('confirmed', 'completed');
 
 -- CreateIndex
 CREATE UNIQUE INDEX "consultation_payments_booking_id_key" ON "consultation_payments"("booking_id");
