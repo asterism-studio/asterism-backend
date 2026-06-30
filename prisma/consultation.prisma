@@ -1,0 +1,102 @@
+enum ConsultationMethod {
+  online
+  in_person
+}
+
+enum ConsultationTimeSlot {
+  am
+  pm
+}
+
+enum ConsultationBookingStatus {
+  pending_payment
+  confirmed
+  payment_failed
+  canceled
+  completed
+}
+
+enum ConsultationPaymentProvider {
+  stripe
+}
+
+enum ConsultationPaymentStatus {
+  pending
+  paid
+  failed
+  canceled
+  refunded
+}
+
+model ConsultationBooking {
+  id                       String                    @id @default(uuid()) @db.Uuid
+  profileId                String                    @map("profile_id") @db.Uuid
+  consultantId             String?                   @map("consultant_id") @db.Uuid
+  sourceImageId            String?                   @map("source_image_id") @db.Text
+  method                   ConsultationMethod
+  consultationDate         DateTime                  @map("consultation_date") @db.Date
+  timeSlot                 ConsultationTimeSlot      @map("time_slot")
+  designField              String?                   @map("design_field") @db.Text
+  designFocus              String?                   @map("design_focus") @db.Text
+  contactName              String?                   @map("contact_name") @db.Text
+  contactEmail             String                    @map("contact_email") @db.Text
+  contactPhone             String?                   @map("contact_phone") @db.Text
+  notes                    String?                   @db.Text
+  paymentConsentAcceptedAt DateTime                  @map("payment_consent_accepted_at") @db.Timestamptz(6)
+  status                   ConsultationBookingStatus @default(pending_payment)
+  createdAt                DateTime                  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt                DateTime                  @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  profile     Profile              @relation(fields: [profileId], references: [id], onDelete: Restrict)
+  consultant  Consultant?          @relation(fields: [consultantId], references: [id], onDelete: SetNull)
+  sourceImage Image?               @relation(fields: [sourceImageId], references: [id], onDelete: SetNull)
+  payment     ConsultationPayment?
+
+  @@index([profileId])
+  @@index([consultantId])
+  @@index([sourceImageId])
+  @@map("consultation_bookings")
+}
+
+model ConsultationPayment {
+  id                        String                      @id @default(uuid()) @db.Uuid
+  bookingId                 String                      @unique @map("booking_id") @db.Uuid
+  provider                  ConsultationPaymentProvider @default(stripe)
+  stripePriceId             String                      @map("stripe_price_id") @db.Text
+  providerCheckoutSessionId String                      @unique @map("provider_checkout_session_id") @db.Text
+  providerPaymentIntentId   String?                     @unique @map("provider_payment_intent_id") @db.Text
+  /// Must be greater than 0. Enforced by the combined Prisma Migration.
+  amount                    Int                         @db.Integer
+  /// MVP only supports TWD.
+  currency                  String                      @default("TWD") @db.VarChar(3)
+  status                    ConsultationPaymentStatus   @default(pending)
+
+  checkoutExpiresAt DateTime? @map("checkout_expires_at") @db.Timestamptz(6)
+  paidAt            DateTime? @map("paid_at") @db.Timestamptz(6)
+
+  refundedAt       DateTime? @map("refunded_at") @db.Timestamptz(6)
+  providerRefundId String?   @unique @map("provider_refund_id") @db.Text
+
+  failedAt      DateTime? @map("failed_at") @db.Timestamptz(6)
+  canceledAt    DateTime? @map("canceled_at") @db.Timestamptz(6)
+  failureReason String?   @map("failure_reason") @db.Text
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  booking ConsultationBooking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+
+  @@map("consultation_payments")
+}
+
+model StripeWebhookEvent {
+  id              String    @id @default(uuid()) @db.Uuid
+  stripeEventId   String    @unique @map("stripe_event_id") @db.Text
+  eventType       String    @map("event_type") @db.Text
+  payload         Json
+  processedAt     DateTime? @map("processed_at") @db.Timestamptz(6)
+  processingError String?   @map("processing_error") @db.Text
+  createdAt       DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@map("stripe_webhook_events")
+}

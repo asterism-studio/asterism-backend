@@ -52,8 +52,6 @@ flowchart TD
   AuthService --> Auth
   Auth --> DbLogic
   DbLogic --> Profiles
-  DbLogic --> MoodboardFolders
-
   User --> ProfileService
   ProfileService --> AutoApi
   AutoApi --> RLS
@@ -96,17 +94,15 @@ sequenceDiagram
   participant Auth as Supabase Auth
   participant Trigger as DB Trigger / Function
   participant Profiles as profiles
-  participant Moodboards as moodboard_folders
 
   rect rgb(245, 245, 245)
-    note over User,Moodboards: 註冊
+    note over User,Profiles: 註冊
     User->>Page: 填寫 email / password
     Page->>Service: signUp(payload)
     Service->>Client: supabase.auth.signUp()
     Client->>Auth: 建立 Auth user
     Auth->>Trigger: on user created
     Trigger->>Profiles: 建立 profile
-    Trigger->>Moodboards: 建立 default moodboard
     Auth-->>Client: session 或 email confirmation 狀態
     Client-->>Service: auth result
     Service-->>Page: 註冊結果
@@ -143,7 +139,7 @@ sequenceDiagram
 | Frontend | 表單、錯誤顯示、導頁、前端 session 狀態 |
 | Auth Service | 封裝 `supabase.auth.*`，不讓 UI 直接依賴 Supabase 細節 |
 | Supabase Auth | 實際建立使用者、驗證帳密、管理 session |
-| DB Trigger / Function | 註冊後初始化 profile / default moodboard |
+| DB Trigger / Function | 註冊後初始化 profile |
 | Backend Repo | 用 Prisma Migration 管理 trigger，不直接接管 Auth 流程 |
 
 ### 2.3 結論
@@ -266,6 +262,8 @@ sequenceDiagram
 | Supabase Auth | 判斷使用者是否登入 |
 | RLS | 限制只能新增 / 讀取自己的收藏 |
 | Backend Repo | 管理 Prisma Migration，不參與一般收藏 runtime API |
+
+Moodboard 資料夾不要求在註冊時自動建立；可由使用者第一次收藏或建立收藏夾時，透過 Moodboard Service 寫入 `moodboard_folders`。
 
 ### 4.3 單一資料來源
 

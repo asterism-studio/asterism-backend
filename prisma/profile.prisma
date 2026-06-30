@@ -17,7 +17,8 @@ model Profile {
   createdAt        DateTime                @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt        DateTime                @updatedAt @map("updated_at") @db.Timestamptz(6)
 
-  moodboardFolders MoodboardFolder[]
+  moodboardFolders     MoodboardFolder[]
+  consultationBookings ConsultationBooking[]
 
   @@map("profiles")
 }

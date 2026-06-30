@@ -1,0 +1,23 @@
+enum ConsultantSpecialty {
+  spatial
+  visual_styling
+  concept_design
+}
+
+model Consultant {
+  id          String               @id @default(uuid()) @db.Uuid
+  displayName String               @map("display_name") @db.VarChar(80)
+  title       String               @db.VarChar(80)
+  avatarUrl   String?              @map("avatar_url") @db.Text
+  bio         String?              @db.Text
+  specialty   ConsultantSpecialty?
+  isActive    Boolean              @default(true) @map("is_active")
+  createdAt   DateTime             @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime             @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  consultationBookings ConsultationBooking[]
+
+  @@index([specialty])
+  @@index([isActive])
+  @@map("consultants")
+}

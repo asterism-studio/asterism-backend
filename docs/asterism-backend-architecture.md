@@ -1,8 +1,8 @@
 # Asterism 後端架構規劃
 
 > 本文件是「規劃中的目標架構」，不是目前 repo 已完整落地的真實架構。用途是統一後續開發方向、責任邊界與資料來源原則。
-> 
-> 文件版本：v1.0.0 | 最後更新日期：2026-06-24 
+>
+> 文件版本：v1.1.0 | 最後更新日期：2026-06-28
 
 一句話摘要：Asterism 採用 **Supabase-first + Backend Worker Repo**。前端專注 UI 與互動，Supabase 負責 Auth、資料存取與權限，Backend Repo 負責 schema 治理、批次任務、AI pipeline 與金流 webhook。
 
@@ -70,7 +70,7 @@ flowchart LR
     AutoApi[Auto-generated API\nPostgREST]
     RLS[RLS Policies\n資料權限規則]
     DB[(PostgreSQL\npublic app tables)]
-    Triggers[Database Triggers / Functions\nprofile / moodboard 初始化]
+    Triggers[Database Triggers / Functions\nprofile 初始化]
     Storage[(Supabase Storage\nwebp / image assets)]
   end
 
@@ -117,6 +117,67 @@ flowchart LR
 
   DB --> Storage
 ```
+
+### 3.1 Backend Repo 目標檔案結構
+
+Backend Repo 採用 feature-based modules：`app.ts` 統一掛載各功能 router，各模組自行管理 endpoint、validation、service 與 types。以下是規劃中的目標結構，不代表目前 repository 已完整存在這些檔案。
+
+```text
+backend-repo/
+├─ src/
+│  ├─ app.ts
+│  ├─ server.ts
+│  ├─ config/
+│  │  └─ env.ts
+│  ├─ db/
+│  │  └─ prisma.ts
+│  ├─ middleware/
+│  │  ├─ requireAuth.ts
+│  │  ├─ validateRequest.ts
+│  │  └─ errorHandler.ts
+│  └─ modules/
+│     ├─ consultants/
+│     │  ├─ consultant.routes.ts
+│     │  ├─ consultant-match.service.ts
+│     │  └─ consultant.types.ts
+│     ├─ consultations/
+│     │  ├─ consultation.routes.ts
+│     │  ├─ consultation.service.ts
+│     │  ├─ consultation.validation.ts
+│     │  └─ consultation.types.ts
+│     └─ payments/
+│        ├─ stripe.routes.ts
+│        ├─ stripe.service.ts
+│        ├─ stripe.webhook.ts
+│        ├─ stripe.types.ts
+│        └─ stripe-webhook-event.service.ts
+├─ prisma/
+│  ├─ schema.prisma
+│  ├─ profile.prisma
+│  ├─ image.prisma
+│  ├─ moodboard.prisma
+│  ├─ consultant.prisma
+│  ├─ consultation.prisma
+│  └─ migrations/
+├─ scripts/
+├─ tests/
+└─ docs/
+```
+
+MVP 階段不另外建立 controller 檔案。`*.routes.ts` 內的 route handler 只負責接收已驗證的輸入、呼叫 service 與回傳 HTTP response；若未來 handler 有多個呼叫端或明顯膨脹，再抽出 `*.controller.ts`。
+
+後端 route 不等同於前端頁面 router。`app.ts` 只集中管理 API prefix、共用 middleware 與掛載順序；各 endpoint 的 HTTP method、validation middleware 與 handler 留在所屬 feature router，避免所有功能耦合在單一中央 routes 檔案。
+
+| 層級 | 責任 |
+|---|---|
+| `app.ts` | Express 全域設定、特殊 route 順序、掛載 feature routers |
+| `*.routes.ts` | 宣告 HTTP method/path、串接 middleware、以薄 handler 呼叫 service 並回傳 response |
+| `validateRequest.ts` + `*.validation.ts` | 驗證 request 的必填欄位、型別與格式 |
+| `*.service.ts` | 授權後的商業規則、資料流程與 Prisma 操作 |
+| `prisma/*.prisma` + PostgreSQL constraints | table、relation、unique、foreign key、not null 等資料完整性 |
+| `errorHandler.ts` | 將已知與未預期錯誤統一轉成 API error response |
+
+Prisma schema 是資料庫模型，不取代 HTTP request validation。實作 request validation 時，優先使用 Zod 定義各模組的 `*.validation.ts`，再由共用 `validateRequest.ts` middleware 執行；route handler 不重複撰寫驗證規則。
 
 ---
 
@@ -332,8 +393,8 @@ flowchart TD
 ## 10. 建議開發順序
 
 ```text
-Phase 1：確認 Supabase Auth + profiles / default moodboard trigger
-Phase 2：確認 RLS policies 可正確限制 profile / moodboard / payment 資料
+Phase 1：確認 Supabase Auth + profiles trigger
+Phase 2：確認 RLS policies 可正確限制 profile / moodboard 資料
 Phase 3：將 style-data.json seed 到 images table
 Phase 4：前端 image.service.ts 改成 Supabase 優先，JSON fallback
 Phase 5：串接 Style DNA result 保存 / 讀取
