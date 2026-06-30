@@ -40,6 +40,8 @@ MVP 階段採用 rule-based matching，不實作完整推薦演算法、顧問�
 | Vintage / Romantic / Art Deco | `visual_styling` |
 | Industrial / Brutalist / Futuristic | `concept_design` |
 
+`consultants.specialty` 使用 Prisma enum `ConsultantSpecialty`，目前合法值只有 `spatial`、`visual_styling`、`concept_design`。Fallback consultant 可以沒有 specialty；active consultant 若要參與特定分類媒合，必須填入上述 enum key。
+
 > 實際 style group key 需以專案現有 Style DNA 結果格式為準。若目前尚未定義正式 key，先在 `consultant-match.service.ts` 中集中管理 mapping，避免散落在 component 或 route handler。
 
 ---

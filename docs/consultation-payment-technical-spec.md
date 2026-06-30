@@ -196,7 +196,7 @@ app.use('/api/v1/consultations', requireAuth, consultationRoutes)
 | `title` | `varchar(80)` | 顧問職稱，例如 `Spatial Consultant` |
 | `avatar_url` | `text` | Nullable，顧問頭像 |
 | `bio` | `text` | Nullable，顧問簡介 |
-| `specialty` | `text` | Nullable，MVP 媒合用分類，例如 `spatial` / `visual_styling` / `concept_design` |
+| `specialty` | `ConsultantSpecialty` | Nullable，MVP 媒合用分類：`spatial` / `visual_styling` / `concept_design` |
 | `is_active` | `boolean` | 是否可被媒合 |
 | `created_at` | `timestamptz` | 建立時間 |
 | `updated_at` | `timestamptz` | 更新時間 |
@@ -204,13 +204,19 @@ app.use('/api/v1/consultations', requireAuth, consultationRoutes)
 Prisma model 建議：
 
 ```prisma
+enum ConsultantSpecialty {
+  spatial
+  visual_styling
+  concept_design
+}
+
 model Consultant {
   id          String   @id @default(uuid()) @db.Uuid
   displayName String   @map("display_name") @db.VarChar(80)
   title       String   @db.VarChar(80)
   avatarUrl   String?  @map("avatar_url") @db.Text
   bio         String?  @db.Text
-  specialty   String?  @db.Text
+  specialty   ConsultantSpecialty?
   isActive    Boolean  @default(true) @map("is_active")
   createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
@@ -239,6 +245,7 @@ model Consultant {
 | `design_focus` | `text` | Nullable |
 | `contact_name` | `text` | 後端由 profile 產生的快照，Nullable |
 | `contact_email` | `text` | 後端由 Auth user email 產生的快照 |
+| `contact_phone` | `text` | Nullable contact snapshot；目前前端 payload 不必填 |
 | `notes` | `text` | Nullable |
 | `payment_consent_accepted_at` | `timestamptz` | 使用者同意 NT$500 deposit 的時間 |
 | `status` | `text` | `pending_payment` / `confirmed` / `payment_failed` / `canceled` / `completed` |
@@ -308,7 +315,13 @@ ALTER TABLE consultation_payments
   ADD CONSTRAINT chk_consultation_payment_provider CHECK (provider IN ('stripe')),
   ADD CONSTRAINT chk_consultation_payment_status CHECK (status IN ('pending', 'paid', 'failed', 'canceled', 'refunded')),
   ADD CONSTRAINT chk_consultation_payment_amount CHECK (amount > 0);
+
+CREATE UNIQUE INDEX consultation_bookings_slot_unique
+ON consultation_bookings (consultation_date, time_slot)
+WHERE status IN ('confirmed', 'completed');
 ```
+
+`POST /api/v1/consultations/checkout` 仍需在建立 booking 前做可用性檢查，讓使用者早點得到錯誤；但避免 double-booking 的最後防線是上面的 DB partial unique index。只有 `confirmed` 與 `completed` 代表時段已被正式占用，`pending_payment`、`payment_failed`、`canceled` 不占名額。
 
 ### 4.6 Supabase Auto API 使用界線
 
@@ -483,6 +496,7 @@ POST /api/v1/payments/stripe/webhook
 - 透過 `stripe_webhook_events` 做冪等性控制。
 - 處理 `checkout.session.completed`。
 - 處理 `checkout.session.expired`。
+- 若付款成功要把 booking 轉為 `confirmed` 時撞到 `consultation_bookings_slot_unique`，將該 payment 標記為 `refunded` 或等待退款處理，booking 標記為 `canceled`，並用 Stripe Refund 對第二筆付款做補償。
 
 ---
 
@@ -492,6 +506,7 @@ POST /api/v1/payments/stripe/webhook
 |---|---|---|---|
 | 初始化建立 | `pending_payment` | `pending` | booking 已建立並寫入 `consultant_id`，Checkout Session 建立完成 |
 | 付款成功 | `confirmed` | `paid` | Webhook 確認付款完成 |
+| 付款成功但時段已被占用 | `canceled` | `refunded` | 更新為 `confirmed` 時撞 DB partial unique index，後端對第二筆付款退款 |
 | 付款失敗 | `payment_failed` | `failed` | 付款失敗事件 |
 | 取消 / 逾期 | `canceled` | `canceled` | 使用者取消或 Checkout Session 過期 |
 | 退款 | `canceled` | `refunded` | 管理員於 Stripe 後台退款 |
