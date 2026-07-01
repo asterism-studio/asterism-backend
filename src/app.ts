@@ -38,7 +38,8 @@ const paymentService = createPaymentCheckoutService({
   cancelUrl: new URL(
     env.stripeCheckoutCancelPath,
     env.frontendOrigin
-  ).toString()
+  ).toString(),
+  now: () => new Date()
 })
 const checkout = createConsultationCheckoutService({
   consultations: consultationRepository,

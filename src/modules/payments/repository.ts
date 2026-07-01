@@ -4,17 +4,15 @@ import type { PaymentRepository } from './types.js'
 export const createPaymentRepository = (
   database: PrismaClient
 ): PaymentRepository => ({
-  createOrGet: async (input) => {
-    const payment = await database.consultationPayment.upsert({
-      where: { bookingId: input.bookingId },
-      update: {},
-      create: {
-        bookingId: input.bookingId,
-        stripePriceId: input.stripePriceId,
+  attachSession: async (input) => {
+    const payment = await database.consultationPayment.update({
+      where: { id: input.paymentId },
+      data: {
         providerCheckoutSessionId: input.providerCheckoutSessionId,
-        amount: input.amount,
-        currency: input.currency,
-        checkoutExpiresAt: input.checkoutExpiresAt
+        checkoutExpiresAt: input.checkoutExpiresAt,
+        status: 'pending',
+        failedAt: null,
+        failureReason: null
       }
     })
 
@@ -23,5 +21,15 @@ export const createPaymentRepository = (
       bookingId: payment.bookingId,
       providerCheckoutSessionId: payment.providerCheckoutSessionId
     }
+  },
+  markFailed: async (paymentId, failureReason, failedAt) => {
+    await database.consultationPayment.update({
+      where: { id: paymentId },
+      data: {
+        status: 'failed',
+        failureReason,
+        failedAt
+      }
+    })
   }
 })

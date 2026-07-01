@@ -45,9 +45,11 @@ const toDatabaseDate = (date: string): Date =>
 export const createConsultationRepository = (
   database: PrismaClient
 ): ConsultationRepository => ({
-  findCheckout: async (bookingId) => {
+  findCheckout: async (profileId, idempotencyKey) => {
     const booking = await database.consultationBooking.findUnique({
-      where: { id: bookingId },
+      where: {
+        profileId_idempotencyKey: { profileId, idempotencyKey }
+      },
       include: { payment: true }
     })
 
@@ -78,6 +80,7 @@ export const createConsultationRepository = (
   isSlotUnavailable: async ({
     consultationDate,
     timeSlot,
+    now,
     excludeBookingId
   }) =>
     Boolean(
@@ -85,33 +88,72 @@ export const createConsultationRepository = (
         where: {
           consultationDate: toDatabaseDate(consultationDate),
           timeSlot,
-          status: { in: ['confirmed', 'completed'] },
+          OR: [
+            { status: { in: ['confirmed', 'completed'] } },
+            {
+              status: 'pending_payment',
+              payment: {
+                is: {
+                  checkoutExpiresAt: { gt: now }
+                }
+              }
+            }
+          ],
           ...(excludeBookingId ? { id: { not: excludeBookingId } } : {})
         },
         select: { id: true }
       })
     ),
 
-  createBooking: async ({ command, contactName, acceptedAt }) => {
-    const booking = await database.consultationBooking.upsert({
-      where: { id: command.idempotencyKey },
-      update: {},
-      create: {
-        id: command.idempotencyKey,
-        profileId: command.auth.userId,
-        sourceImageId: command.input.sourceImageId,
-        method: command.input.method,
-        consultationDate: toDatabaseDate(command.input.consultationDate),
-        timeSlot: command.input.timeSlot,
-        designField: command.input.designField,
-        designFocus: command.input.designFocus,
-        contactName,
-        contactEmail: command.auth.email,
-        notes: command.input.notes,
-        paymentConsentAcceptedAt: acceptedAt
-      }
+  createCheckoutDraft: async ({
+    command,
+    contactName,
+    acceptedAt,
+    price
+  }) => {
+    const result = await database.$transaction(async (transaction) => {
+      const booking = await transaction.consultationBooking.upsert({
+        where: {
+          profileId_idempotencyKey: {
+            profileId: command.auth.userId,
+            idempotencyKey: command.idempotencyKey
+          }
+        },
+        update: {},
+        create: {
+          idempotencyKey: command.idempotencyKey,
+          profileId: command.auth.userId,
+          sourceImageId: command.input.sourceImageId,
+          method: command.input.method,
+          consultationDate: toDatabaseDate(command.input.consultationDate),
+          timeSlot: command.input.timeSlot,
+          designField: command.input.designField,
+          designFocus: command.input.designFocus,
+          contactName,
+          contactEmail: command.auth.email,
+          notes: command.input.notes,
+          paymentConsentAcceptedAt: acceptedAt,
+          status: 'pending_payment'
+        }
+      })
+      const payment = await transaction.consultationPayment.upsert({
+        where: { bookingId: booking.id },
+        update: {},
+        create: {
+          bookingId: booking.id,
+          stripePriceId: price.stripePriceId,
+          amount: price.amount,
+          currency: price.currency,
+          status: 'pending'
+        }
+      })
+
+      return { booking, payment }
     })
 
-    return toBookingRecord(booking)
+    return {
+      booking: toBookingRecord(result.booking),
+      payment: toPaymentRecord(result.payment)
+    }
   }
 })

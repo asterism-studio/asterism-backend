@@ -39,12 +39,17 @@ export interface BookingRecord {
 export interface PaymentRecord {
   id: string
   bookingId: string
-  providerCheckoutSessionId: string
+  providerCheckoutSessionId: string | null
 }
 
 export interface CheckoutRecord {
   booking: BookingRecord
   payment: PaymentRecord | null
+}
+
+export interface CheckoutDraftRecord {
+  booking: BookingRecord
+  payment: PaymentRecord
 }
 
 export interface CheckoutCommand {
@@ -65,26 +70,31 @@ export interface CheckoutPrice {
 }
 
 export interface ConsultationRepository {
-  findCheckout(bookingId: string): Promise<CheckoutRecord | null>
+  findCheckout(
+    profileId: string,
+    idempotencyKey: string
+  ): Promise<CheckoutRecord | null>
   findProfile(profileId: string): Promise<ProfileSnapshot | null>
   sourceImageExists(sourceImageId: string): Promise<boolean>
   isSlotUnavailable(input: {
     consultationDate: string
     timeSlot: CreateCheckoutInput['timeSlot']
+    now: Date
     excludeBookingId?: string
   }): Promise<boolean>
-  createBooking(input: {
+  createCheckoutDraft(input: {
     command: CheckoutCommand
     contactName: string | null
     acceptedAt: Date
-  }): Promise<BookingRecord>
+    price: CheckoutPrice
+  }): Promise<CheckoutDraftRecord>
 }
 
 export interface PaymentCheckoutService {
   prepareCheckout(): Promise<CheckoutPrice>
   createOrResume(input: {
     booking: BookingRecord
-    payment: PaymentRecord | null
+    payment: PaymentRecord
     price?: CheckoutPrice
   }): Promise<CheckoutResult>
 }

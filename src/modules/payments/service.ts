@@ -11,6 +11,8 @@ import type {
   StripeCheckoutSession
 } from './types.js'
 
+const CONSULTATION_DEPOSIT_AMOUNT = 50_000
+
 export const createStripeCheckoutGateway = (
   stripe: Stripe
 ): StripeCheckoutGateway => ({
@@ -129,9 +131,7 @@ export const createPaymentCheckoutService = (
       price.id !== dependencies.stripePriceId ||
       !price.active ||
       price.currency.toUpperCase() !== 'TWD' ||
-      unitAmount === null ||
-      !Number.isInteger(unitAmount) ||
-      unitAmount <= 0
+      unitAmount !== CONSULTATION_DEPOSIT_AMOUNT
     ) {
       throw new AppError(
         503,
@@ -152,7 +152,7 @@ export const createPaymentCheckoutService = (
     payment,
     price
   }) => {
-    if (payment) {
+    if (payment.providerCheckoutSessionId) {
       let session
 
       try {
@@ -182,27 +182,19 @@ export const createPaymentCheckoutService = (
         `consultation-checkout:${booking.id}`
       )
     } catch {
+      await dependencies.payments.markFailed(
+        payment.id,
+        'Stripe Checkout Session creation failed.',
+        dependencies.now()
+      )
       throw providerError()
     }
 
-    const storedPayment = await dependencies.payments.createOrGet({
-      bookingId: booking.id,
-      stripePriceId: resolvedPrice.stripePriceId,
+    const storedPayment = await dependencies.payments.attachSession({
+      paymentId: payment.id,
       providerCheckoutSessionId: session.id,
-      amount: resolvedPrice.amount,
-      currency: resolvedPrice.currency,
       checkoutExpiresAt: session.expiresAt
     })
-
-    if (storedPayment.providerCheckoutSessionId !== session.id) {
-      try {
-        session = await dependencies.stripe.retrieveSession(
-          storedPayment.providerCheckoutSessionId
-        )
-      } catch {
-        throw providerError()
-      }
-    }
 
     return toCheckoutResult(booking.id, storedPayment.id, session)
   }

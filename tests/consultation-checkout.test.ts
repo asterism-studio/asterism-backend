@@ -25,6 +25,8 @@ import type {
 } from '../src/modules/payments/types.js'
 
 const idempotencyKey = '550e8400-e29b-41d4-a716-446655440000'
+const bookingId = '850e8400-e29b-41d4-a716-446655440000'
+const paymentId = '750e8400-e29b-41d4-a716-446655440000'
 const auth = {
   userId: '650e8400-e29b-41d4-a716-446655440000',
   email: 'user@example.com'
@@ -68,6 +70,10 @@ const withServer = async (
 test('checkout schema enforces the documented trust boundary', () => {
   assert.equal(createCheckoutSchema.safeParse(validPayload).success, true)
   assert.equal(idempotencyKeySchema.safeParse(idempotencyKey).success, true)
+  assert.equal(
+    createCheckoutSchema.parse({ ...validPayload, method: 'in-person' }).method,
+    'in_person'
+  )
 
   for (const payload of [
     { ...validPayload, amount: 500 },
@@ -87,9 +93,14 @@ const createServiceFixture = (
     slotUnavailable?: boolean
   } = {}
 ) => {
-  const calls = { createBooking: 0, createOrResume: 0 }
+  const calls = {
+    createCheckoutDraft: 0,
+    createOrResume: 0,
+    findCheckout: [] as string[],
+    slotChecks: [] as Date[]
+  }
   const booking: BookingRecord = {
-    id: idempotencyKey,
+    id: bookingId,
     profileId: auth.userId,
     method: 'online',
     consultationDate: '2099-07-01',
@@ -101,31 +112,42 @@ const createServiceFixture = (
     contactEmail: auth.email,
     status: 'pending_payment'
   }
+  const payment = {
+    id: paymentId,
+    bookingId,
+    providerCheckoutSessionId: null
+  }
   const dependencies: CheckoutDependencies = {
     consultations: {
-      findCheckout: async () => overrides.existing ?? null,
+      findCheckout: async (profileId, key) => {
+        calls.findCheckout = [profileId, key]
+        return overrides.existing ?? null
+      },
       findProfile: async () =>
         overrides.profile === undefined
           ? { id: auth.userId, displayName: 'Asterism User' }
           : overrides.profile,
       sourceImageExists: async () => overrides.sourceImageExists ?? true,
-      isSlotUnavailable: async () => overrides.slotUnavailable ?? false,
-      createBooking: async () => {
-        calls.createBooking += 1
-        return booking
+      isSlotUnavailable: async (input) => {
+        calls.slotChecks.push(input.now)
+        return overrides.slotUnavailable ?? false
+      },
+      createCheckoutDraft: async () => {
+        calls.createCheckoutDraft += 1
+        return { booking, payment }
       }
     },
     payments: {
       prepareCheckout: async () => ({
         stripePriceId: 'price_consultation',
-        amount: 500,
+        amount: 50_000,
         currency: 'TWD'
       }),
       createOrResume: async ({ booking: targetBooking }) => {
         calls.createOrResume += 1
         return {
           bookingId: targetBooking.id,
-          paymentId: '750e8400-e29b-41d4-a716-446655440000',
+          paymentId,
           checkoutUrl: 'https://checkout.stripe.com/c/pay/test'
         }
       }
@@ -136,6 +158,7 @@ const createServiceFixture = (
   return {
     checkout: createConsultationCheckoutService(dependencies),
     booking,
+    payment,
     calls
   }
 }
@@ -144,14 +167,21 @@ test('checkout service creates once and safely resumes the same intent', async (
   const first = createServiceFixture()
   const created = await first.checkout(validCommand)
   const retry = createServiceFixture({
-    existing: { booking: first.booking, payment: null }
+    existing: { booking: first.booking, payment: first.payment }
   })
   const resumed = await retry.checkout(validCommand)
 
   assert.deepEqual(created, resumed)
-  assert.equal(first.calls.createBooking, 1)
-  assert.equal(retry.calls.createBooking, 0)
+  assert.equal(created.bookingId, bookingId)
+  assert.notEqual(created.bookingId, idempotencyKey)
+  assert.deepEqual(first.calls.findCheckout, [auth.userId, idempotencyKey])
+  assert.equal(first.calls.createCheckoutDraft, 1)
+  assert.equal(retry.calls.createCheckoutDraft, 0)
   assert.equal(retry.calls.createOrResume, 1)
+  assert.equal(
+    first.calls.slotChecks[0]?.toISOString(),
+    '2099-06-01T00:00:00.000Z'
+  )
 })
 
 test('checkout service rejects reused keys and unavailable resources', async () => {
@@ -182,18 +212,27 @@ test('checkout service rejects reused keys and unavailable resources', async () 
 
   for (const { fixture, code } of cases) {
     await assert.rejects(fixture.checkout(validCommand), rejectsWithCode(code))
-    assert.equal(fixture.calls.createBooking, 0)
+    assert.equal(fixture.calls.createCheckoutDraft, 0)
   }
 })
 
 const createPaymentFixture = (
   options: {
     priceCurrency?: string
+    unitAmount?: number
     sessionStatus?: StripeCheckoutSession['status']
     existingPayment?: CheckoutRecord['payment']
+    providerFailure?: boolean
   } = {}
 ) => {
-  const calls = { idempotencyKey: '', customerEmail: '', createSession: 0 }
+  const calls = {
+    idempotencyKey: '',
+    customerEmail: '',
+    createSession: 0,
+    attachSession: 0,
+    markFailed: 0,
+    failureReason: ''
+  }
   const session: StripeCheckoutSession = {
     id: 'cs_test_123',
     status: options.sessionStatus ?? 'open',
@@ -208,9 +247,12 @@ const createPaymentFixture = (
       id: 'price_consultation',
       active: true,
       currency: options.priceCurrency ?? 'twd',
-      unitAmount: 500
+      unitAmount: options.unitAmount ?? 50_000
     }),
     createSession: async (input, stripeIdempotencyKey) => {
+      if (options.providerFailure) {
+        throw new Error('Stripe unavailable')
+      }
       calls.idempotencyKey = stripeIdempotencyKey
       calls.customerEmail = input.customerEmail
       calls.createSession += 1
@@ -219,40 +261,79 @@ const createPaymentFixture = (
     retrieveSession: async () => session
   }
   const payments: PaymentRepository = {
-    createOrGet: async (input) =>
-      options.existingPayment ?? {
-        id: '750e8400-e29b-41d4-a716-446655440000',
-        bookingId: input.bookingId,
+    attachSession: async (input) => {
+      calls.attachSession += 1
+      return {
+        id: input.paymentId,
+        bookingId,
         providerCheckoutSessionId: input.providerCheckoutSessionId
       }
+    },
+    markFailed: async (_paymentId, failureReason) => {
+      calls.markFailed += 1
+      calls.failureReason = failureReason
+    }
   }
   const service = createPaymentCheckoutService({
     stripe,
     payments,
     stripePriceId: 'price_consultation',
     successUrl: 'http://localhost:5173/consultant?payment=success',
-    cancelUrl: 'http://localhost:5173/consultant?payment=cancel'
+    cancelUrl: 'http://localhost:5173/consultant?payment=cancel',
+    now: () => new Date('2099-06-01T00:00:00.000Z')
   })
 
-  return { service, booking: createServiceFixture().booking, calls }
+  return {
+    service,
+    booking: createServiceFixture().booking,
+    payment:
+      options.existingPayment ?? {
+        id: paymentId,
+        bookingId,
+        providerCheckoutSessionId: null
+      },
+    calls
+  }
 }
 
 test('payment service creates a stable Stripe checkout from booking data', async () => {
-  const { service, booking, calls } = createPaymentFixture()
+  const { service, booking, payment, calls } = createPaymentFixture()
   const price = await service.prepareCheckout()
   const result = await service.createOrResume({
     booking,
-    payment: null,
+    payment,
     price
   })
 
   assert.equal(result.bookingId, booking.id)
   assert.equal(
     calls.idempotencyKey,
-    `consultation-checkout:${idempotencyKey}`
+    `consultation-checkout:${bookingId}`
   )
   assert.equal(calls.customerEmail, booking.contactEmail)
   assert.equal(calls.createSession, 1)
+  assert.equal(calls.attachSession, 1)
+})
+
+test('payment service records provider failure on the existing draft', async () => {
+  const { service, booking, payment, calls } = createPaymentFixture({
+    providerFailure: true
+  })
+
+  await assert.rejects(
+    service.createOrResume({
+      booking,
+      payment,
+      price: await service.prepareCheckout()
+    }),
+    rejectsWithCode('CHECKOUT_PROVIDER_ERROR')
+  )
+
+  assert.equal(calls.markFailed, 1)
+  assert.equal(
+    calls.failureReason,
+    'Stripe Checkout Session creation failed.'
+  )
 })
 
 test('payment service rejects bad configuration and unusable sessions', async () => {
@@ -261,10 +342,14 @@ test('payment service rejects bad configuration and unusable sessions', async ()
     badPrice.service.prepareCheckout(),
     rejectsWithCode('CHECKOUT_CONFIGURATION_ERROR')
   )
+  await assert.rejects(
+    createPaymentFixture({ unitAmount: 99_900 }).service.prepareCheckout(),
+    rejectsWithCode('CHECKOUT_CONFIGURATION_ERROR')
+  )
 
   const payment = {
-    id: '750e8400-e29b-41d4-a716-446655440000',
-    bookingId: idempotencyKey,
+    id: paymentId,
+    bookingId,
     providerCheckoutSessionId: 'cs_expired'
   }
   const expired = createPaymentFixture({

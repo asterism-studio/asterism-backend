@@ -32,17 +32,19 @@ export interface StripeCheckoutGateway {
   retrieveSession(sessionId: string): Promise<StripeCheckoutSession>
 }
 
-export interface CreatePaymentInput {
-  bookingId: string
-  stripePriceId: string
+export interface AttachSessionInput {
+  paymentId: string
   providerCheckoutSessionId: string
-  amount: number
-  currency: 'TWD'
   checkoutExpiresAt: Date | null
 }
 
 export interface PaymentRepository {
-  createOrGet(input: CreatePaymentInput): Promise<PaymentRecord>
+  attachSession(input: AttachSessionInput): Promise<PaymentRecord>
+  markFailed(
+    paymentId: string,
+    failureReason: string,
+    failedAt: Date
+  ): Promise<void>
 }
 
 export interface CreatePaymentCheckoutDependencies {
@@ -51,4 +53,5 @@ export interface CreatePaymentCheckoutDependencies {
   stripePriceId: string
   successUrl: string
   cancelUrl: string
+  now(): Date
 }

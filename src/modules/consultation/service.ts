@@ -56,7 +56,9 @@ export const createConsultationCheckoutService = (
   dependencies: CheckoutDependencies
 ) => {
   return async (command: CheckoutCommand): Promise<CheckoutResult> => {
+    const now = dependencies.now()
     const existing = await dependencies.consultations.findCheckout(
+      command.auth.userId,
       command.idempotencyKey
     )
 
@@ -67,6 +69,7 @@ export const createConsultationCheckoutService = (
         await dependencies.consultations.isSlotUnavailable({
           consultationDate: command.input.consultationDate,
           timeSlot: command.input.timeSlot,
+          now,
           excludeBookingId: existing.booking.id
         })
       ) {
@@ -77,14 +80,27 @@ export const createConsultationCheckoutService = (
         )
       }
 
-      const price = existing.payment
-        ? undefined
-        : await dependencies.payments.prepareCheckout()
+      if (!existing.payment) {
+        const price = await dependencies.payments.prepareCheckout()
+        const draft = await dependencies.consultations.createCheckoutDraft({
+          command,
+          contactName: null,
+          acceptedAt: now,
+          price
+        })
+
+        return dependencies.payments.createOrResume({
+          ...draft,
+          price
+        })
+      }
 
       return dependencies.payments.createOrResume({
         booking: existing.booking,
         payment: existing.payment,
-        price
+        price: existing.payment.providerCheckoutSessionId
+          ? undefined
+          : await dependencies.payments.prepareCheckout()
       })
     }
 
@@ -116,7 +132,8 @@ export const createConsultationCheckoutService = (
     if (
       await dependencies.consultations.isSlotUnavailable({
         consultationDate: command.input.consultationDate,
-        timeSlot: command.input.timeSlot
+        timeSlot: command.input.timeSlot,
+        now
       })
     ) {
       throw new AppError(
@@ -127,17 +144,17 @@ export const createConsultationCheckoutService = (
     }
 
     const price = await dependencies.payments.prepareCheckout()
-    const booking = await dependencies.consultations.createBooking({
+    const draft = await dependencies.consultations.createCheckoutDraft({
       command,
       contactName: profile.displayName,
-      acceptedAt: dependencies.now()
+      acceptedAt: now,
+      price
     })
 
-    assertSameIntent(booking, command)
+    assertSameIntent(draft.booking, command)
 
     return dependencies.payments.createOrResume({
-      booking,
-      payment: null,
+      ...draft,
       price
     })
   }
