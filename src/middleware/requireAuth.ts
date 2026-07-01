@@ -1,15 +1,13 @@
 import type { RequestHandler } from 'express'
+import { isAuthApiError } from '@supabase/supabase-js'
 
+import type {
+  AuthVerifier,
+  VerifiedUser
+} from '../modules/auth/auth.types.js'
 import { AppError } from './errorHandler.js'
 
-interface VerifiedUser {
-  id: string
-  email: string | null
-}
-
-export interface AuthVerifier {
-  getUser(accessToken: string): Promise<VerifiedUser | null>
-}
+export type { AuthVerifier } from '../modules/auth/auth.types.js'
 
 interface SupabaseAuthClient {
   auth: {
@@ -31,6 +29,13 @@ export const createSupabaseAuthVerifier = (
   getUser: async (accessToken) => {
     const { data, error } = await client.auth.getUser(accessToken)
 
+    if (
+      error &&
+      (!isAuthApiError(error) || ![400, 401, 403].includes(error.status))
+    ) {
+      throw error
+    }
+
     if (error || !data.user) {
       return null
     }
@@ -47,30 +52,16 @@ export const createRequireAuth = (
 ): RequestHandler => {
   return async (req, res, next) => {
     const authorization = req.header('authorization')
-    const match = authorization?.match(/^Bearer\s+(.+)$/i)
+    const match = authorization?.match(/^Bearer ([^\s]+)$/i)
 
     if (!match) {
       throw new AppError(401, 'UNAUTHORIZED', 'Authentication is required.')
     }
 
-    let user: VerifiedUser | null
-
-    try {
-      user = await authVerifier.getUser(match[1])
-    } catch {
-      throw new AppError(401, 'UNAUTHORIZED', 'Authentication is invalid.')
-    }
+    const user = await authVerifier.getUser(match[1])
 
     if (!user) {
       throw new AppError(401, 'UNAUTHORIZED', 'Authentication is invalid.')
-    }
-
-    if (!user.email) {
-      throw new AppError(
-        409,
-        'PROFILE_EMAIL_REQUIRED',
-        'An account email is required for checkout.'
-      )
     }
 
     res.locals.auth = {
