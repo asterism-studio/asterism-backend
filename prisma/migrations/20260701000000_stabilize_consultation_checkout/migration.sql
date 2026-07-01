@@ -13,3 +13,9 @@ ALTER COLUMN "provider_checkout_session_id" DROP NOT NULL;
 
 CREATE UNIQUE INDEX "consultation_bookings_profile_id_idempotency_key_key"
 ON "consultation_bookings"("profile_id", "idempotency_key");
+
+DROP INDEX "consultation_bookings_slot_unique";
+
+CREATE UNIQUE INDEX "consultation_bookings_slot_unique"
+ON "consultation_bookings"("consultation_date", "time_slot")
+WHERE "status" IN ('pending_payment', 'confirmed', 'completed');

@@ -89,6 +89,6 @@ test('Migration SQL adds the active consultation booking slot lock', async () =>
 
   assert.match(
     migrationSql,
-    /CREATE UNIQUE INDEX "consultation_bookings_slot_unique" ON "consultation_bookings"\("consultation_date", "time_slot"\) WHERE "status" IN \('confirmed', 'completed'\);/
+    /CREATE UNIQUE INDEX "consultation_bookings_slot_unique"\s+ON "consultation_bookings"\("consultation_date", "time_slot"\)\s+WHERE "status" IN \('pending_payment', 'confirmed', 'completed'\);/
   )
 })

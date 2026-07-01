@@ -96,8 +96,7 @@ const createServiceFixture = (
   const calls = {
     createCheckoutDraft: 0,
     createOrResume: 0,
-    findCheckout: [] as string[],
-    slotChecks: [] as Date[]
+    findCheckout: [] as string[]
   }
   const booking: BookingRecord = {
     id: bookingId,
@@ -128,13 +127,9 @@ const createServiceFixture = (
           ? { id: auth.userId, displayName: 'Asterism User' }
           : overrides.profile,
       sourceImageExists: async () => overrides.sourceImageExists ?? true,
-      isSlotUnavailable: async (input) => {
-        calls.slotChecks.push(input.now)
-        return overrides.slotUnavailable ?? false
-      },
       createCheckoutDraft: async () => {
         calls.createCheckoutDraft += 1
-        return { booking, payment }
+        return overrides.slotUnavailable ? null : { booking, payment }
       }
     },
     payments: {
@@ -176,12 +171,8 @@ test('checkout service creates once and safely resumes the same intent', async (
   assert.notEqual(created.bookingId, idempotencyKey)
   assert.deepEqual(first.calls.findCheckout, [auth.userId, idempotencyKey])
   assert.equal(first.calls.createCheckoutDraft, 1)
-  assert.equal(retry.calls.createCheckoutDraft, 0)
+  assert.equal(retry.calls.createCheckoutDraft, 1)
   assert.equal(retry.calls.createOrResume, 1)
-  assert.equal(
-    first.calls.slotChecks[0]?.toISOString(),
-    '2099-06-01T00:00:00.000Z'
-  )
 })
 
 test('checkout service rejects reused keys and unavailable resources', async () => {
@@ -194,25 +185,29 @@ test('checkout service rejects reused keys and unavailable resources', async () 
           payment: null
         }
       }),
-      code: 'IDEMPOTENCY_KEY_REUSED'
+      code: 'IDEMPOTENCY_KEY_REUSED',
+      createCheckoutDraft: 0
     },
     {
       fixture: createServiceFixture({ profile: null }),
-      code: 'PROFILE_NOT_FOUND'
+      code: 'PROFILE_NOT_FOUND',
+      createCheckoutDraft: 0
     },
     {
       fixture: createServiceFixture({ sourceImageExists: false }),
-      code: 'SOURCE_IMAGE_NOT_FOUND'
+      code: 'SOURCE_IMAGE_NOT_FOUND',
+      createCheckoutDraft: 0
     },
     {
       fixture: createServiceFixture({ slotUnavailable: true }),
-      code: 'SLOT_UNAVAILABLE'
+      code: 'SLOT_UNAVAILABLE',
+      createCheckoutDraft: 1
     }
   ]
 
-  for (const { fixture, code } of cases) {
+  for (const { fixture, code, createCheckoutDraft } of cases) {
     await assert.rejects(fixture.checkout(validCommand), rejectsWithCode(code))
-    assert.equal(fixture.calls.createCheckoutDraft, 0)
+    assert.equal(fixture.calls.createCheckoutDraft, createCheckoutDraft)
   }
 })
 

@@ -75,4 +75,8 @@ test('checkout stability migration separates idempotency and permits payment dra
     sql,
     /ALTER COLUMN "provider_checkout_session_id" DROP NOT NULL/
   )
+  assert.match(
+    sql,
+    /CREATE UNIQUE INDEX "consultation_bookings_slot_unique"\s+ON "consultation_bookings"\("consultation_date", "time_slot"\)\s+WHERE "status" IN \('pending_payment', 'confirmed', 'completed'\);/
+  )
 })

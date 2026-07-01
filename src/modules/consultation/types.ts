@@ -76,18 +76,12 @@ export interface ConsultationRepository {
   ): Promise<CheckoutRecord | null>
   findProfile(profileId: string): Promise<ProfileSnapshot | null>
   sourceImageExists(sourceImageId: string): Promise<boolean>
-  isSlotUnavailable(input: {
-    consultationDate: string
-    timeSlot: CreateCheckoutInput['timeSlot']
-    now: Date
-    excludeBookingId?: string
-  }): Promise<boolean>
   createCheckoutDraft(input: {
     command: CheckoutCommand
     contactName: string | null
     acceptedAt: Date
     price: CheckoutPrice
-  }): Promise<CheckoutDraftRecord>
+  }): Promise<CheckoutDraftRecord | null>
 }
 
 export interface PaymentCheckoutService {

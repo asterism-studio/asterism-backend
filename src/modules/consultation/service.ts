@@ -52,6 +52,13 @@ const assertSameIntent = (
   }
 }
 
+const slotUnavailable = () =>
+  new AppError(
+    409,
+    'SLOT_UNAVAILABLE',
+    'The consultation slot is unavailable.'
+  )
+
 export const createConsultationCheckoutService = (
   dependencies: CheckoutDependencies
 ) => {
@@ -65,42 +72,28 @@ export const createConsultationCheckoutService = (
     if (existing) {
       assertSameIntent(existing.booking, command)
 
-      if (
-        await dependencies.consultations.isSlotUnavailable({
-          consultationDate: command.input.consultationDate,
-          timeSlot: command.input.timeSlot,
-          now,
-          excludeBookingId: existing.booking.id
+      if (existing.payment?.providerCheckoutSessionId) {
+        return dependencies.payments.createOrResume({
+          booking: existing.booking,
+          payment: existing.payment
         })
-      ) {
-        throw new AppError(
-          409,
-          'SLOT_UNAVAILABLE',
-          'The consultation slot is unavailable.'
-        )
       }
 
-      if (!existing.payment) {
-        const price = await dependencies.payments.prepareCheckout()
-        const draft = await dependencies.consultations.createCheckoutDraft({
-          command,
-          contactName: null,
-          acceptedAt: now,
-          price
-        })
+      const price = await dependencies.payments.prepareCheckout()
+      const draft = await dependencies.consultations.createCheckoutDraft({
+        command,
+        contactName: null,
+        acceptedAt: now,
+        price
+      })
 
-        return dependencies.payments.createOrResume({
-          ...draft,
-          price
-        })
+      if (!draft) {
+        throw slotUnavailable()
       }
 
       return dependencies.payments.createOrResume({
-        booking: existing.booking,
-        payment: existing.payment,
-        price: existing.payment.providerCheckoutSessionId
-          ? undefined
-          : await dependencies.payments.prepareCheckout()
+        ...draft,
+        price
       })
     }
 
@@ -129,20 +122,6 @@ export const createConsultationCheckoutService = (
       )
     }
 
-    if (
-      await dependencies.consultations.isSlotUnavailable({
-        consultationDate: command.input.consultationDate,
-        timeSlot: command.input.timeSlot,
-        now
-      })
-    ) {
-      throw new AppError(
-        409,
-        'SLOT_UNAVAILABLE',
-        'The consultation slot is unavailable.'
-      )
-    }
-
     const price = await dependencies.payments.prepareCheckout()
     const draft = await dependencies.consultations.createCheckoutDraft({
       command,
@@ -150,6 +129,10 @@ export const createConsultationCheckoutService = (
       acceptedAt: now,
       price
     })
+
+    if (!draft) {
+      throw slotUnavailable()
+    }
 
     assertSameIntent(draft.booking, command)
 
