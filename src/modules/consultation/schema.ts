@@ -44,7 +44,9 @@ const optionalNotes = z
 
 export const createCheckoutSchema = z
   .object({
-    method: z.enum(['online', 'in_person']),
+    method: z
+      .enum(['online', 'in-person'])
+      .transform((value) => (value === 'in-person' ? 'in_person' : value)),
     consultationDate: z
       .string()
       .refine(isValidDateOnly, 'consultationDate must be a valid YYYY-MM-DD.')

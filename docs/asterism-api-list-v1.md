@@ -85,11 +85,21 @@ stripePaymentIntentId
 
 後端必須從 Supabase Auth token 取得 `userId`，不得信任前端傳入的 user/profile 資訊。
 
+### Headers
+
+```text
+Authorization: Bearer <supabase_access_token>
+Idempotency-Key: <uuid>
+```
+
+同一使用者以相同 `Idempotency-Key` 與相同 payload 重送時，後端恢復同一筆
+checkout；同一使用者不得以相同 key 送出不同 payload。
+
 ### Request body
 
 ```ts
 {
-  method: 'online' | 'in_person'
+  method: 'online' | 'in-person'
   consultationDate: 'YYYY-MM-DD'
   timeSlot: 'am' | 'pm'
   designField: string
@@ -104,7 +114,7 @@ stripePaymentIntentId
 
 ```ts
 export const createCheckoutSchema = z.object({
-  method: z.enum(['online', 'in_person']),
+  method: z.enum(['online', 'in-person']),
   consultationDate: z.string(),
   timeSlot: z.enum(['am', 'pm']),
   designField: z.string().min(1).max(80),
@@ -147,7 +157,10 @@ export const createCheckoutSchema = z.object({
 - `bookingStatus` 不可由前端決定。
 - `paymentStatus` 不可由前端決定。
 - `amount` / `currency` 不可由前端決定。
+- `in-person` 落庫時正規化為 `in_person`。
+- Stripe Price 必須為 active、TWD 且 `unit_amount = 50000`（NT$500）。
 - checkout 前需要檢查時段可用性。
+- 未過期的 `pending_payment` checkout 暫時鎖定時段；過期後釋放。
 - 若有 DB partial unique index，也仍應在 service 層做檢查與錯誤處理。
 
 ---
