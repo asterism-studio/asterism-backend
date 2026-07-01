@@ -77,6 +77,9 @@ test('checkout schema enforces the documented trust boundary', () => {
 
   for (const payload of [
     { ...validPayload, amount: 500 },
+    { ...validPayload, profile_id: auth.userId },
+    { ...validPayload, userId: auth.userId },
+    { ...validPayload, email: 'attacker@example.com' },
     { ...validPayload, consultationDate: '2099-02-30' },
     { ...validPayload, consultationDate: '2000-01-01' },
     { ...validPayload, paymentConsentAccepted: false }
@@ -108,6 +111,7 @@ const createServiceFixture = (
     designFocus: 'Material palette',
     sourceImageId: 'image_123',
     notes: 'I want advice for a calm living room.',
+    contactName: 'Asterism User',
     contactEmail: auth.email,
     status: 'pending_payment'
   }
@@ -173,6 +177,23 @@ test('checkout service creates once and safely resumes the same intent', async (
   assert.equal(first.calls.createCheckoutDraft, 1)
   assert.equal(retry.calls.createCheckoutDraft, 1)
   assert.equal(retry.calls.createOrResume, 1)
+})
+
+test('checkout service rejects authenticated accounts without email', async () => {
+  const fixture = createServiceFixture()
+  const command = {
+    ...validCommand,
+    auth: {
+      userId: auth.userId,
+      email: null
+    }
+  }
+
+  await assert.rejects(
+    fixture.checkout(command),
+    rejectsWithCode('PROFILE_EMAIL_REQUIRED')
+  )
+  assert.equal(fixture.calls.createCheckoutDraft, 0)
 })
 
 test('checkout service rejects reused keys and unavailable resources', async () => {
