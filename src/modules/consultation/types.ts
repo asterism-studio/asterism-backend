@@ -2,7 +2,7 @@ import type { z } from 'zod'
 
 import type { createCheckoutSchema } from './schema.js'
 
-export type CreateCheckoutInput = z.infer<typeof createCheckoutSchema>
+export type CreateCheckoutInput = z.output<typeof createCheckoutSchema>
 
 export interface AuthContext {
   userId: string

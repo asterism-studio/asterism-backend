@@ -13,7 +13,8 @@ import {
 } from './schema.js'
 import type {
   CheckoutCommand,
-  CheckoutResult
+  CheckoutResult,
+  CreateCheckoutInput
 } from './types.js'
 
 interface ConsultationRouterDependencies {
@@ -51,6 +52,7 @@ export const createConsultationRouter = (
   dependencies: ConsultationRouterDependencies
 ): Router => {
   const router = Router()
+
   const checkoutRateLimit = rateLimit({
     windowMs: dependencies.rateLimit.windowMs,
     limit: dependencies.rateLimit.limit,
@@ -76,13 +78,15 @@ export const createConsultationRouter = (
     checkoutRateLimit,
     validateRequest(createCheckoutSchema),
     async (_req, res) => {
+      const idempotencyKey = res.locals.idempotencyKey as string
+      const input = res.locals.input as CreateCheckoutInput
+
       const command: CheckoutCommand = {
-        idempotencyKey: idempotencyKeySchema.parse(
-          res.locals.idempotencyKey
-        ),
+        idempotencyKey,
         auth: res.locals.auth,
-        input: createCheckoutSchema.parse(res.locals.input)
+        input
       }
+
       const result = await dependencies.checkout(command)
 
       res.status(201).json({
