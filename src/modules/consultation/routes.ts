@@ -12,14 +12,14 @@ import {
   idempotencyKeySchema
 } from './schema.js'
 import type {
-  CheckoutCommand,
+  CheckoutRequest,
   CheckoutResult,
   CreateCheckoutInput
 } from './types.js'
 
 interface ConsultationRouterDependencies {
   authVerifier: AuthVerifier
-  checkout(command: CheckoutCommand): Promise<CheckoutResult>
+  checkout(request: CheckoutRequest): Promise<CheckoutResult>
   rateLimit: {
     windowMs: number
     limit: number
@@ -81,13 +81,13 @@ export const createConsultationRouter = (
       const idempotencyKey = res.locals.idempotencyKey as string
       const input = res.locals.input as CreateCheckoutInput
 
-      const command: CheckoutCommand = {
+      const request: CheckoutRequest = {
         idempotencyKey,
         auth: res.locals.auth,
         input
       }
 
-      const result = await dependencies.checkout(command)
+      const result = await dependencies.checkout(request)
 
       res.status(201).json({
         success: true,

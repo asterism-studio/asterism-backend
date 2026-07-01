@@ -1,13 +1,9 @@
 import type { z } from 'zod'
 
+import type { AuthContext } from '../auth/auth.types.js'
 import type { createCheckoutSchema } from './schema.js'
 
 export type CreateCheckoutInput = z.output<typeof createCheckoutSchema>
-
-export interface AuthContext {
-  userId: string
-  email: string
-}
 
 export interface CheckoutResult {
   bookingId: string
@@ -53,9 +49,18 @@ export interface CheckoutDraftRecord {
   payment: PaymentRecord
 }
 
-export interface CheckoutCommand {
+export interface CheckoutRequest {
   idempotencyKey: string
   auth: AuthContext
+  input: CreateCheckoutInput
+}
+
+export interface CheckoutCommand {
+  idempotencyKey: string
+  auth: {
+    userId: string
+    email: string
+  }
   input: CreateCheckoutInput
 }
 
