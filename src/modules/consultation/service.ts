@@ -82,7 +82,7 @@ export const createConsultationCheckoutService = (
       const price = await dependencies.payments.prepareCheckout()
       const draft = await dependencies.consultations.createCheckoutDraft({
         command,
-        contactName: null,
+        contactName: existing.booking.contactName, // 已有預約紀錄時，重新建立 checkout 草稿要保留原本的聯絡人名字
         acceptedAt: now,
         price
       })

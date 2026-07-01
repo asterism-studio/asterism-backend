@@ -27,6 +27,7 @@ const toBookingRecord = (
   designFocus: booking.designFocus,
   sourceImageId: booking.sourceImageId,
   notes: booking.notes,
+  contactName: booking.contactName,
   contactEmail: booking.contactEmail,
   status: booking.status
 })

@@ -32,6 +32,7 @@ export interface BookingRecord {
   designFocus: string | null
   sourceImageId: string | null
   notes: string | null
+  contactName: string | null
   contactEmail: string
   status: BookingStatus
 }
