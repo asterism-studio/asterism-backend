@@ -51,3 +51,28 @@ test('consultation migration creates the schema and locks it down with RLS', asy
   assert.equal((sql.match(/CREATE POLICY/g) ?? []).length, 3)
   assert.equal((sql.match(/FOR SELECT/g) ?? []).length, 3)
 })
+
+test('checkout stability migration separates idempotency and permits payment drafts', async () => {
+  const migrationsDirectory = path.resolve('prisma/migrations')
+  const entries = await readdir(migrationsDirectory)
+  const migrationDirectory = entries.find((entry) =>
+    entry.endsWith('_stabilize_consultation_checkout')
+  )
+
+  assert.ok(migrationDirectory, 'checkout stability migration is missing')
+
+  const sql = await readFile(
+    path.join(migrationsDirectory, migrationDirectory, 'migration.sql'),
+    'utf8'
+  )
+
+  assert.match(sql, /ADD COLUMN "idempotency_key" UUID/)
+  assert.match(
+    sql,
+    /CREATE UNIQUE INDEX "consultation_bookings_profile_id_idempotency_key_key"/
+  )
+  assert.match(
+    sql,
+    /ALTER COLUMN "provider_checkout_session_id" DROP NOT NULL/
+  )
+})

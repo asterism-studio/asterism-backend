@@ -31,6 +31,7 @@ enum ConsultationPaymentStatus {
 model ConsultationBooking {
   id                       String                    @id @default(uuid()) @db.Uuid
   profileId                String                    @map("profile_id") @db.Uuid
+  idempotencyKey           String                    @map("idempotency_key") @db.Uuid
   consultantId             String?                   @map("consultant_id") @db.Uuid
   sourceImageId            String?                   @map("source_image_id") @db.Text
   method                   ConsultationMethod
@@ -55,6 +56,7 @@ model ConsultationBooking {
   @@index([profileId])
   @@index([consultantId])
   @@index([sourceImageId])
+  @@unique([profileId, idempotencyKey])
   @@map("consultation_bookings")
 }
 
@@ -63,7 +65,7 @@ model ConsultationPayment {
   bookingId                 String                      @unique @map("booking_id") @db.Uuid
   provider                  ConsultationPaymentProvider @default(stripe)
   stripePriceId             String                      @map("stripe_price_id") @db.Text
-  providerCheckoutSessionId String                      @unique @map("provider_checkout_session_id") @db.Text
+  providerCheckoutSessionId String?                     @unique @map("provider_checkout_session_id") @db.Text
   providerPaymentIntentId   String?                     @unique @map("provider_payment_intent_id") @db.Text
   /// Must be greater than 0. Enforced by the combined Prisma Migration.
   amount                    Int                         @db.Integer

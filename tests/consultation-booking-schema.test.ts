@@ -48,6 +48,10 @@ test('Prisma schema defines the consultation booking contract', async () => {
   assert.match(schema, /profileId\s+String\s+@map\("profile_id"\)\s+@db\.Uuid/)
   assert.match(
     schema,
+    /idempotencyKey\s+String\s+@map\("idempotency_key"\)\s+@db\.Uuid/
+  )
+  assert.match(
+    schema,
     /sourceImageId\s+String\?\s+@map\("source_image_id"\)\s+@db\.Text/
   )
   assert.match(
@@ -76,6 +80,7 @@ test('Prisma schema defines the consultation booking contract', async () => {
     schema,
     /sourceImage\s+Image\?\s+@relation\(fields: \[sourceImageId\], references: \[id\], onDelete: SetNull\)/
   )
+  assert.match(schema, /@@unique\(\[profileId, idempotencyKey\]\)/)
   assert.doesNotMatch(schema, /@@index\(\[consultationDate, timeSlot\]\)/)
 })
 

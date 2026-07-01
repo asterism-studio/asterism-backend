@@ -29,7 +29,7 @@ test('Prisma schema defines a one-to-one consultation payment contract', async (
   )
   assert.match(
     schema,
-    /providerCheckoutSessionId\s+String\s+@unique\s+@map\("provider_checkout_session_id"\)\s+@db\.Text/
+    /providerCheckoutSessionId\s+String\?\s+@unique\s+@map\("provider_checkout_session_id"\)\s+@db\.Text/
   )
   assert.match(
     schema,
