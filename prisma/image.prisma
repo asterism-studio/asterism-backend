@@ -12,6 +12,7 @@ model Image {
   needsReview  Json     @map("needs_review")
   createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
   excluded     Boolean  @default(false)
+  embedding    Unsupported("vector(512)")?
 
   moodboardItems       MoodboardItem[]
   consultationBookings ConsultationBooking[]
