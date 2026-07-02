@@ -3,6 +3,7 @@ import type {
   BookingRecord,
   CheckoutCommand,
   CheckoutDependencies,
+  CheckoutRequest,
   CheckoutResult
 } from './types.js'
 
@@ -62,7 +63,22 @@ const slotUnavailable = () =>
 export const createConsultationCheckoutService = (
   dependencies: CheckoutDependencies
 ) => {
-  return async (command: CheckoutCommand): Promise<CheckoutResult> => {
+  return async (request: CheckoutRequest): Promise<CheckoutResult> => {
+    if (!request.auth.email) {
+      throw new AppError(
+        409,
+        'PROFILE_EMAIL_REQUIRED',
+        'An account email is required for checkout.'
+      )
+    }
+
+    const command: CheckoutCommand = {
+      ...request,
+      auth: {
+        userId: request.auth.userId,
+        email: request.auth.email
+      }
+    }
     const now = dependencies.now()
     const existing = await dependencies.consultations.findCheckout(
       command.auth.userId,
