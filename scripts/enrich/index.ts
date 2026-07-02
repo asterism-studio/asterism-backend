@@ -5,6 +5,7 @@ import { classifyImage } from './classify';
 import { buildImageRow } from './buildImageRow';
 import type { ImageRow } from './buildImageRow';
 import { createClipScorer } from './clipScorer';
+import { createClipEmbedder } from './clipEmbedder';
 import { extractPalette } from './colorPalette';
 import { searchPexels } from './pexelsClient';
 import { searchUnsplash } from './unsplashClient';
@@ -21,6 +22,7 @@ async function main(): Promise<void> {
   // try/finally 確保中途拋錯時 pool 仍會關閉，避免連線洩漏。
   try {
     const scorer = await createClipScorer();
+    const embedder = await createClipEmbedder();
     const allRows: ImageRow[] = [];
     let skipped = 0;
     let totalInserted = 0;
@@ -51,7 +53,8 @@ async function main(): Promise<void> {
           try {
             const classification = await classifyImage(scorer, meta.url);
             const palette = await extractPalette(meta.url);
-            groupRows.push(buildImageRow(classification, palette, meta));
+            const embedding = await embedder.embedImage(meta.url);
+            groupRows.push(buildImageRow(classification, palette, meta, embedding));
           } catch (error) {
             skipped += 1;
             console.warn(`[${styleGroup} / ${medium}] 跳過 ${meta.url}：`, (error as Error).message);

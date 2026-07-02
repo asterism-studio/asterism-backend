@@ -13,6 +13,7 @@ export interface ImageRow {
   attribution: string;
   confidence: { styleGroup: number; medium: number; subMedium: number };
   needs_review: { styleGroup: boolean; medium: boolean; subMedium: boolean };
+  embedding: number[];
 }
 
 const GALLERY_LABEL: Record<ImageSource, string> = {
@@ -23,7 +24,8 @@ const GALLERY_LABEL: Record<ImageSource, string> = {
 export function buildImageRow(
   classification: ClassificationResult,
   palette: string[],
-  meta: GalleryMeta
+  meta: GalleryMeta,
+  embedding: number[]
 ): ImageRow {
   return {
     id: `ext-${meta.source}-${meta.externalId}`,
@@ -36,6 +38,7 @@ export function buildImageRow(
     color_palette: palette,
     attribution: `Photo by ${meta.photographer} / ${GALLERY_LABEL[meta.source]}`,
     confidence: classification.confidence,
-    needs_review: classification.needsReview
+    needs_review: classification.needsReview,
+    embedding
   };
 }
