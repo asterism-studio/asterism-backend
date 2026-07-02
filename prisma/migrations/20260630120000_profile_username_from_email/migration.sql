@@ -2,7 +2,8 @@
 -- 依需求填入 email 的「@ 前綴」(local-part)。username 為 UNIQUE VarChar(32)，
 -- 故回填與 trigger 都做去重，避免：① 回填時撞唯一鍵讓 migration 失敗；② 新註冊撞名讓 trigger throw 而擋住整個註冊。
 
--- 1) 回填現有 NULL：同前綴用 row_number 去重，第 2 筆起加序號後綴（截到 32 字內）。
+-- 1) 回填現有 NULL：同前綴用 row_number 去重，第 2 筆起加序號後綴；
+--    第 1 筆若 base 已存在於既有（非 NULL）username，改用 base+id 短碼（截到 32 字內）。
 WITH candidates AS (
   SELECT
     p.id,
@@ -18,7 +19,10 @@ WITH candidates AS (
 UPDATE public.profiles p
 SET username = CASE
                  WHEN c.base IS NULL OR c.base = '' THEN 'user-' || left(replace(p.id::text, '-', ''), 12)
-                 WHEN c.rn = 1 THEN c.base
+                 WHEN c.rn = 1 AND NOT EXISTS (
+                   SELECT 1 FROM public.profiles ex WHERE ex.username = c.base
+                 ) THEN c.base
+                 WHEN c.rn = 1 THEN left(c.base, 23) || '-' || left(replace(p.id::text, '-', ''), 8)
                  ELSE left(c.base, 26) || '-' || c.rn::text
                END
 FROM candidates c
