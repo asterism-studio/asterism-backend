@@ -15,7 +15,8 @@
     "enrich:images": "tsx scripts/enrich/index.ts",
     "backfill:embeddings": "tsx scripts/backfillImageEmbeddings.ts",
     "reclassify:submedium": "tsx scripts/reclassifySubMedium.ts",
-    "recompute:needs-review": "tsx scripts/recomputeNeedsReview.ts"
+    "recompute:needs-review": "tsx scripts/recomputeNeedsReview.ts",
+    "compute:style-anchors": "tsx scripts/computeStyleGroupAnchors.ts"
   },
   "keywords": [],
   "author": "",
