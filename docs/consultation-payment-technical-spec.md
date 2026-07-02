@@ -235,6 +235,7 @@ model Consultant {
 |---|---|---|
 | `id` | `uuid` | Primary Key |
 | `profile_id` | `uuid` | references `profiles.id` |
+| `idempotency_key` | `uuid` | request `Idempotency-Key`；與 `profile_id` 組成 Unique |
 | `consultant_id` | `uuid` | references `consultants.id`, Nullable |
 | `source_image_id` | `text` | references `images.id`, Nullable |
 | `method` | `text` | `online` / `in_person` |
@@ -275,7 +276,7 @@ consultant   Consultant? @relation(
 | `booking_id` | `uuid` | references `consultation_bookings.id`, Unique |
 | `provider` | `text` | 預設 `stripe` |
 | `stripe_price_id` | `text` | 固定 NT$500 deposit 的 Stripe Price ID |
-| `provider_checkout_session_id` | `text` | Stripe Checkout Session ID，Unique |
+| `provider_checkout_session_id` | `text` | Stripe Checkout Session ID，Unique, Nullable；建立 payment draft 後回填 |
 | `provider_payment_intent_id` | `text` | Stripe Payment Intent ID，Unique, Nullable |
 | `amount` | `integer` | 後端紀錄的本次收款金額 |
 | `currency` | `varchar(3)` | 預設 `TWD`，MVP 僅支援 TWD |
@@ -321,7 +322,7 @@ ON consultation_bookings (consultation_date, time_slot)
 WHERE status IN ('confirmed', 'completed');
 ```
 
-`POST /api/v1/consultations/checkout` 仍需在建立 booking 前做可用性檢查，讓使用者早點得到錯誤；但避免 double-booking 的最後防線是上面的 DB partial unique index。只有 `confirmed` 與 `completed` 代表時段已被正式占用，`pending_payment`、`payment_failed`、`canceled` 不占名額。
+`POST /api/v1/consultations/checkout` 仍需在建立 booking 前做可用性檢查，讓使用者早點得到錯誤；但避免 double-booking 的最後防線是上面的 DB partial unique index。`confirmed` 與 `completed` 正式占用時段；`pending_payment` 只有在 payment 的 `checkout_expires_at` 尚未到期時暫時鎖定。已過期、`payment_failed`、`canceled` 不占名額。
 
 ### 4.6 Supabase Auto API 使用界線
 
@@ -401,6 +402,7 @@ Response:
 ```text
 POST /api/v1/consultations/checkout
 Authorization: Bearer <supabase_access_token>
+Idempotency-Key: <uuid>
 ```
 
 Request body:
@@ -446,6 +448,9 @@ Response:
 - 若找不到符合 style group 的 consultant，fallback 為第一位 `is_active = true` 的 consultant。
 - 若完全沒有 active consultant，回傳 `409 CONSULTANT_UNAVAILABLE`，不得建立 checkout session。
 - 後端使用固定 `STRIPE_CONSULTATION_PRICE_ID` 建立 Checkout Session。
+- Stripe Price 必須為 active、TWD 且 `unit_amount = 50000`（NT$500）。
+- 同一使用者以相同 `Idempotency-Key` 與相同 payload 重送時，恢復同一筆 checkout；相同 key 不得搭配不同 payload。
+- `method` 接受 `online` 或 `in-person`；`in-person` 落庫為 `in_person`。
 - 前端不得傳入 `consultantId`、金額、幣別或 Stripe price id。
 
 ### 6.3 查詢預約狀態
@@ -504,7 +509,7 @@ POST /api/v1/payments/stripe/webhook
 
 | 情境 | `consultation_bookings.status` | `consultation_payments.status` | 說明 |
 |---|---|---|---|
-| 初始化建立 | `pending_payment` | `pending` | booking 已建立並寫入 `consultant_id`，Checkout Session 建立完成 |
+| 初始化建立 | `pending_payment` | `pending` | transaction 先建立 booking 與 payment draft，再建立並回填 Checkout Session |
 | 付款成功 | `confirmed` | `paid` | Webhook 確認付款完成 |
 | 付款成功但時段已被占用 | `canceled` | `refunded` | 更新為 `confirmed` 時撞 DB partial unique index，後端對第二筆付款退款 |
 | 付款失敗 | `payment_failed` | `failed` | 付款失敗事件 |
@@ -556,9 +561,10 @@ sequenceDiagram
   API->>DB: 讀取 profile / email / style_dna_result
   API->>DB: 再次媒合 active consultant
   API->>DB: 建立 consultation_bookings(status=pending_payment, consultant_id)
+  API->>DB: 建立 consultation_payments(status=pending)
   API->>Stripe: 建立 Checkout Session(固定 NT$500 Price)
   Stripe-->>API: checkoutUrl
-  API->>DB: 建立 consultation_payments(status=pending)
+  API->>DB: 回填 Checkout Session ID 與到期時間
   API-->>FE: bookingId + checkoutUrl + matchedConsultant
   FE-->>Stripe: Redirect to Checkout
 

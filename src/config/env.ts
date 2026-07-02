@@ -26,5 +26,11 @@ export const env = {
   nodeEnv: process.env.NODE_ENV ?? 'development',
   port: parsePort(process.env.PORT),
   frontendOrigin: process.env.FRONTEND_ORIGIN ?? 'http://localhost:5173',
-  databaseUrl: requireEnv('DATABASE_URL')
+  databaseUrl: requireEnv('DATABASE_URL'),
+  supabaseUrl: requireEnv('SUPABASE_URL'),
+  supabaseAnonKey: requireEnv('SUPABASE_ANON_KEY'),
+  stripeSecretKey: requireEnv('STRIPE_SECRET_KEY'),
+  stripeConsultationPriceId: requireEnv('STRIPE_CONSULTATION_PRICE_ID'),
+  stripeCheckoutSuccessPath: process.env.STRIPE_CHECKOUT_SUCCESS_PATH ?? '/consultant?payment=success',
+  stripeCheckoutCancelPath: process.env.STRIPE_CHECKOUT_CANCEL_PATH ?? '/consultant?payment=cancel',
 }
