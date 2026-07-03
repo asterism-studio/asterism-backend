@@ -258,7 +258,7 @@ checkout.session.expired
 | 2 | 驗簽失敗時，不寫入 webhook event，不更新 booking / payment |
 | 3 | 驗簽成功後，先寫入 `stripe_webhook_events.stripe_event_id` |
 | 4 | 若 `stripe_event_id` 已存在且 `processed_at` 已存在，直接回 `200 OK` |
-| 5 | 若 `stripe_event_id` 已存在但 `processed_at` 為 null，不重複更新 booking / payment |
+| 5 | 若 `stripe_event_id` 已存在但 `processed_at` 為 null，重新處理 event；處理失敗時回 `500`，讓 Stripe 以相同 event ID 重試 |
 | 6 | 透過 `checkout.session.id` 查詢 `provider_checkout_session_id` |
 | 7 | 找不到對應 payment 時，不建立未知 booking / payment，記錄 `processing_error` |
 | 8 | 找到 payment 後，用 transaction 更新 payment、booking、webhook event |
@@ -280,7 +280,7 @@ Webhook 處理成功或 duplicate event 已處理時：
 | `400` | `INVALID_STRIPE_SIGNATURE` | Stripe signature 驗證失敗 |
 | `200` | `DUPLICATE_EVENT_IGNORED` | 已處理過的 event，不重複更新 |
 | `200` | `PAYMENT_NOT_FOUND` | 找不到本地 payment，已記錄錯誤但不建立未知資料 |
-| `500` | `WEBHOOK_PROCESSING_FAILED` | 狀態同步失敗，event 不標記 processed |
+| `500` | `WEBHOOK_PROCESSING_FAILED` | 狀態同步失敗，event 不標記 processed；Stripe 重送相同 event ID 時會再次處理 |
 
 ### 注意事項
 
