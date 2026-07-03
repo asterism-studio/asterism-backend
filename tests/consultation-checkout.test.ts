@@ -122,6 +122,7 @@ const createServiceFixture = (
   }
   const dependencies: CheckoutDependencies = {
     consultations: {
+      findDetails: async () => null,
       findCheckout: async (profileId, key) => {
         calls.findCheckout = [profileId, key]
         return overrides.existing ?? null
@@ -394,6 +395,9 @@ const createCheckoutHttpApp = (options: {
       paymentId: '750e8400-e29b-41d4-a716-446655440000',
       checkoutUrl: 'https://checkout.stripe.com/c/pay/test'
     }),
+    getBooking: async () => {
+      throw new Error('Booking query is outside this test.')
+    },
     rateLimit: {
       windowMs: 60_000,
       limit: options.rateLimit ?? 5
