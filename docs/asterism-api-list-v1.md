@@ -1,21 +1,25 @@
-# Asterism 建議 API 清單 v1
+# 顧問預約與金流 API Contract
 
+> 更新日期：2026-07-02  
+> 狀態：Planned  
 > 版本：v1  
-> 更新日期：2026-06-30  
 > 適用範圍：顧問預約、Stripe 金流、顧問配對、預約查詢  
-> 架構定位：Supabase-first + Backend Worker Repo
+> 架構定位：Supabase-first + Backend Worker Repo  
+> 關聯文件：[顧問預約與金流技術規格設計書](./consultation-payment-technical-spec.md)
+
+本文件定義顧問預約與金流相關 API contract，包含 endpoint、auth、headers、request body、response 與主要驗證規則。
 
 ---
 
-## 1. 設計原則
+## 1. API 設計原則
 
-Asterism 目前已將顧問與金流 schema 上線至 Supabase。接下來 API 實作應優先處理：
-
-1. 建立預約與 Stripe Checkout Session
-2. 接收 Stripe webhook 並更新付款狀態
-3. 查詢使用者自己的預約紀錄
-4. 查詢指定日期的可預約時段
-5. 在付款成功後由後端進行顧問配對
+- API 使用 `/api/v1` 作為版本前綴。
+- 需要使用者身份的 API 一律使用 `Authorization: Bearer <supabase_access_token>`。
+- 後端必須從 Supabase Auth token 取得使用者身份，不接受前端傳入 `userId` / `profileId`。
+- 金額、幣別、付款狀態、預約狀態、Stripe id、顧問媒合結果均不可由前端決定。
+- Request body 應拒絕 unknown fields。
+- `success_url` / `cancel_url` 只作為前端 UX 訊號，不代表實際付款結果。
+- Stripe webhook 不使用一般使用者 auth，而是使用 Stripe signature 驗證來源。
 
 ---
 
@@ -28,7 +32,7 @@ Asterism 目前已將顧問與金流 schema 上線至 Supabase。接下來 API �
 | `email` | Supabase Auth / profiles |
 | `contactEmail` | 後端從 Auth user email 產生快照 |
 | `contactName` | 後端從 profiles 產生快照，MVP 可 nullable |
-| `price` / `amount` | 後端 price config 或 Stripe price id |
+| `price` / `amount` | 後端 price config 或 Stripe Price ID |
 | `currency` | 後端決定 |
 | `paymentStatus` | Stripe webhook / 後端 payment service |
 | `bookingStatus` | 後端 consultation service |
@@ -63,35 +67,44 @@ stripeSessionId
 stripePaymentIntentId
 ```
 
-如果前端 request body 出現這些欄位，後端應透過 Zod `.strict()` 拒絕 unknown fields，或在 service 層明確忽略並覆寫。
+若 request body 出現上述欄位，後端應拒絕 unknown fields，或在 service 層明確忽略並覆寫。
 
 ---
 
-## 4. MVP 必做 API
+## 4. Endpoint 總覽
 
-## 4.1 `POST /api/v1/consultations/checkout`
+| API | 優先級 | Auth | 用途 |
+|---|---|---|---|
+| `POST /api/v1/consultations/checkout` | 必做 | Required | 建立 booking / payment draft 與 Stripe Checkout Session |
+| `POST /api/v1/payments/stripe/webhook` | 必做 | Stripe signature | 接收 Stripe event 並同步付款狀態 |
+| `GET /api/v1/consultations/:bookingId` | 必做 | Required | 查詢單一預約與付款狀態 |
+| `GET /api/v1/consultations/me` | 建議 | Required | 查詢自己的預約紀錄 |
+| `GET /api/v1/consultations/availability` | 建議 | Required | 查詢指定日期可預約時段 |
+| `GET /api/v1/consultants/match` | 視前端流程 | Required | 查詢前端顯示用媒合顧問 |
+| `GET /api/v1/consultants` | 可選 | Optional / Required | 顯示 active consultants 公開資料 |
+| `POST /api/v1/consultations/:bookingId/cancel` | 後續 | Required | 取消尚未付款或尚未完成的預約 |
+| `POST /api/v1/payments/:paymentId/refund` | 後續 | Admin only | 建立退款 |
+
+---
+
+## 5. `POST /api/v1/consultations/checkout`
 
 ### 用途
 
 建立 consultation booking、建立 pending payment、建立 Stripe Checkout Session，並回傳 `checkoutUrl`。
 
-這是前端「支付顧問費用」按鈕要呼叫的主要 API。
+這是前端「支付顧問費用」按鈕呼叫的主要 API。
 
 ### Auth
 
 需要登入。
 
-後端必須從 Supabase Auth token 取得 `userId`，不得信任前端傳入的 user/profile 資訊。
-
-### Headers
-
-```text
+```txt
 Authorization: Bearer <supabase_access_token>
 Idempotency-Key: <uuid>
 ```
 
-同一使用者以相同 `Idempotency-Key` 與相同 payload 重送時，後端恢復同一筆
-checkout；同一使用者不得以相同 key 送出不同 payload。
+同一使用者以相同 `Idempotency-Key` 與相同 payload 重送時，後端應恢復同一筆 checkout；同一使用者不得以相同 key 送出不同 payload。
 
 ### Request body
 
@@ -100,28 +113,28 @@ checkout；同一使用者不得以相同 key 送出不同 payload。
   method: 'online' | 'in-person'
   consultationDate: 'YYYY-MM-DD'
   timeSlot: 'am' | 'pm'
-  designField: string
-  designFocus: string
+  designField?: string
+  designFocus?: string
   sourceImageId?: string
   notes?: string
   paymentConsentAccepted: true
 }
 ```
 
-### Validation 建議
+### Validation
 
-```ts
-export const createCheckoutSchema = z.object({
-  method: z.enum(['online', 'in-person']),
-  consultationDate: z.string(),
-  timeSlot: z.enum(['am', 'pm']),
-  designField: z.string().min(1).max(80),
-  designFocus: z.string().min(1).max(200),
-  sourceImageId: z.string().optional(),
-  notes: z.string().max(1000).optional(),
-  paymentConsentAccepted: z.literal(true),
-}).strict();
-```
+| 欄位 | 規則 |
+|---|---|
+| `method` | 必填，僅允許 `online` / `in-person` |
+| `consultationDate` | 必填，`YYYY-MM-DD` |
+| `timeSlot` | 必填，僅允許 `am` / `pm` |
+| `designField` | Optional，若提供需符合長度限制 |
+| `designFocus` | Optional，若提供需符合長度限制 |
+| `sourceImageId` | Optional |
+| `notes` | Optional，需限制最大長度 |
+| `paymentConsentAccepted` | 必須為 `true` |
+
+Request body 不得包含 `amount`、`currency`、`paymentStatus`、`bookingStatus`、`consultantId`、Stripe price / product id。
 
 ### 後端流程
 
@@ -131,11 +144,12 @@ export const createCheckoutSchema = z.object({
 → 查詢 profile
 → 從 Auth / profile 產生 contact snapshot
 → 檢查 date + timeSlot 是否可預約
+→ 後端再次執行 consultant match
 → 後端決定 price / currency / Stripe price id
 → 建立 ConsultationBooking: pending_payment
 → 建立 ConsultationPayment: pending
 → 建立 Stripe Checkout Session
-→ 寫入 stripeSessionId
+→ 寫入 providerCheckoutSessionId
 → 回傳 checkoutUrl
 ```
 
@@ -143,27 +157,46 @@ export const createCheckoutSchema = z.object({
 
 ```ts
 {
-  bookingId: string
-  paymentId: string
-  checkoutUrl: string
+  success: true,
+  data: {
+    bookingId: string
+    paymentId: string
+    checkoutUrl: string
+    matchedConsultant: {
+      id: string
+      displayName: string
+      title: string
+      avatarUrl?: string
+    }
+  },
+  error: null
 }
 ```
+
+### 常見錯誤
+
+| 狀態碼 | Code | 情境 |
+|---:|---|---|
+| `400` | `VALIDATION_ERROR` | body 格式錯誤、unknown fields、未同意 payment consent |
+| `401` | `UNAUTHORIZED` | 未登入或 token 無效 |
+| `404` | `PROFILE_NOT_FOUND` | 找不到對應 profile |
+| `409` | `SLOT_UNAVAILABLE` | 指定日期與時段不可預約 |
+| `409` | `CONSULTANT_UNAVAILABLE` | 沒有 active consultant 可媒合 |
+| `409` | `IDEMPOTENCY_KEY_CONFLICT` | 相同 key 搭配不同 payload |
+| `500` | `CHECKOUT_CREATE_FAILED` | Stripe Checkout Session 建立失敗 |
 
 ### 注意事項
 
 - `success_url` 不代表付款成功。
-- `bookingStatus` 不可由前端決定。
-- `paymentStatus` 不可由前端決定。
+- `bookingStatus` / `paymentStatus` 不可由前端決定。
 - `amount` / `currency` 不可由前端決定。
 - `in-person` 落庫時正規化為 `in_person`。
-- Stripe Price 必須為 active、TWD 且 `unit_amount = 50000`（NT$500）。
-- checkout 前需要檢查時段可用性。
-- 未過期的 `pending_payment` checkout 暫時鎖定時段；過期後釋放。
-- 若有 DB partial unique index，也仍應在 service 層做檢查與錯誤處理。
+- Checkout 前需要檢查時段可用性。
+- DB partial unique index 仍是避免 double-booking 的最後防線。
 
 ---
 
-## 4.2 `POST /api/v1/payments/stripe/webhook`
+## 6. `POST /api/v1/payments/stripe/webhook`
 
 ### 用途
 
@@ -171,44 +204,32 @@ export const createCheckoutSchema = z.object({
 
 ### Auth
 
-不使用一般使用者 auth。
-
-此 route 透過 Stripe signature 驗證來源。
+不使用一般使用者 auth。此 route 透過 Stripe signature 驗證來源。
 
 ### Middleware 要求
 
 Stripe webhook 必須使用 raw body，並掛在 `express.json()` 之前。
 
-```ts
-app.post(
-  '/api/v1/payments/stripe/webhook',
-  express.raw({ type: 'application/json' }),
-  stripeWebhookHandler
-);
-
-app.use(express.json());
+```txt
+POST /api/v1/payments/stripe/webhook
+→ raw body
+→ verify Stripe signature
+→ handle event
 ```
 
-### 必須處理
+### 支援事件
 
-- 使用 raw body
-- 驗證 Stripe signature
-- 記錄 Stripe event id
-- 具備 idempotency
-- 不重複處理同一個 event
-- 不依賴 `success_url` 判斷付款成功
-
-### MVP 建議處理事件
+目前主流程只處理：
 
 ```txt
 checkout.session.completed
 checkout.session.expired
-payment_intent.payment_failed
 ```
 
-退款事件可以未來另開 issue：
+後續可擴充事件：
 
 ```txt
+payment_intent.payment_failed
 charge.refunded
 refund.updated
 ```
@@ -220,31 +241,130 @@ checkout.session.completed
 → paymentStatus = paid
 → paidAt = now
 → bookingStatus = confirmed
-→ consultant-match service 決定 consultantId
 ```
 
 ```txt
 checkout.session.expired
 → paymentStatus = canceled
-→ bookingStatus = canceled 或 pending_payment 保留，依規格決定
+→ canceledAt = now
+→ bookingStatus = canceled
 ```
 
-```txt
-payment_intent.payment_failed
-→ paymentStatus = failed
-→ bookingStatus = payment_failed
+### Webhook 處理規則
+
+| 步驟 | 規則 |
+|---|---|
+| 1 | 使用 raw body 與 `Stripe-Signature` 驗證 signature |
+| 2 | 驗簽失敗時，不寫入 webhook event，不更新 booking / payment |
+| 3 | 驗簽成功後，先寫入 `stripe_webhook_events.stripe_event_id` |
+| 4 | 若 `stripe_event_id` 已存在且 `processed_at` 已存在，直接回 `200 OK` |
+| 5 | 若 `stripe_event_id` 已存在但 `processed_at` 為 null，重新處理 event；處理失敗時回 `500`，讓 Stripe 以相同 event ID 重試 |
+| 6 | 透過 `checkout.session.id` 查詢 `provider_checkout_session_id` |
+| 7 | 找不到對應 payment 時，不建立未知 booking / payment，記錄 `processing_error` |
+| 8 | 找到 payment 後，用 transaction 更新 payment、booking、webhook event |
+
+### Response
+
+Webhook 處理成功或 duplicate event 已處理時：
+
+```ts
+{
+  received: true
+}
 ```
+
+### 常見錯誤
+
+| 狀態碼 | Code | 情境 |
+|---:|---|---|
+| `400` | `INVALID_STRIPE_SIGNATURE` | Stripe signature 驗證失敗 |
+| `200` | `DUPLICATE_EVENT_IGNORED` | 已處理過的 event，不重複更新 |
+| `200` | `PAYMENT_NOT_FOUND` | 找不到本地 payment，已記錄錯誤但不建立未知資料 |
+| `500` | `WEBHOOK_PROCESSING_FAILED` | 狀態同步失敗，event 不標記 processed；Stripe 重送相同 event ID 時會再次處理 |
 
 ### 注意事項
 
-- webhook 是付款狀態的主要真相來源。
+- Webhook 是付款狀態的主要真相來源。
 - 前端 success page 只能提示「付款處理中」或重新查詢 booking 狀態。
-- 顧問配對應在付款成功後才執行。
-- 顧問配對只應使用 `isActive = true` 的顧問。
+- 同一筆 event 的 payment / booking / webhook event 更新必須 all-or-nothing。
+- 退款補償流程不放在第一版 webhook 主流程。
 
 ---
 
-## 4.3 `GET /api/v1/consultations/me`
+## 7. `GET /api/v1/consultations/:bookingId`
+
+### 用途
+
+查詢單一預約詳情。前端在 `/consultant?payment=success` 或 `/consultant?payment=cancel` 後，可用此 API 查詢最新狀態。
+
+### Auth
+
+需要登入。
+
+```txt
+Authorization: Bearer <supabase_access_token>
+```
+
+### Path params
+
+```txt
+bookingId=<uuid>
+```
+
+### 權限
+
+- 一般使用者只能查詢自己的 booking。
+- `bookingId` 只代表查詢目標，不代表使用者有權限讀取。
+- admin 查詢應另行設計 admin-only API。
+
+### Response
+
+```ts
+{
+  success: true,
+  data: {
+    booking: {
+      id: string
+      status: 'pending_payment' | 'confirmed' | 'payment_failed' | 'canceled' | 'completed'
+      method: 'online' | 'in_person'
+      consultationDate: string
+      timeSlot: 'am' | 'pm'
+      designField?: string
+      designFocus?: string
+      notes?: string
+      contactName?: string
+      contactEmail: string
+      createdAt: string
+      updatedAt: string
+    }
+    payment: {
+      status: 'pending' | 'paid' | 'failed' | 'canceled' | 'refunded'
+      amount: number
+      currency: 'TWD'
+      paidAt?: string
+    }
+    consultant?: {
+      id: string
+      displayName: string
+      title: string
+      avatarUrl?: string
+    }
+  },
+  error: null
+}
+```
+
+### 常見錯誤
+
+| 狀態碼 | Code | 情境 |
+|---:|---|---|
+| `401` | `UNAUTHORIZED` | 未登入 |
+| `403` | `FORBIDDEN` | booking 不屬於目前使用者 |
+| `404` | `BOOKING_NOT_FOUND` | 找不到 booking |
+
+---
+
+## 8. `GET /api/v1/consultations/me`
 
 ### 用途
 
@@ -253,6 +373,10 @@ payment_intent.payment_failed
 ### Auth
 
 需要登入。
+
+```txt
+Authorization: Bearer <supabase_access_token>
+```
 
 ### Query parameters
 
@@ -264,92 +388,43 @@ cursor=...
 
 ### 後端查詢條件
 
-```ts
-where: {
-  profileId: authProfile.id
-}
+```txt
+profileId = currentAuthProfile.id
 ```
+
+不接受前端傳入 `profileId` 查詢。
 
 ### Response
 
 ```ts
 {
-  items: [
-    {
-      id: string
-      method: string
-      consultationDate: string
-      timeSlot: string
-      bookingStatus: string
-      paymentStatus: string
-      consultant?: {
-        displayName: string
-        title: string
-        avatarUrl?: string
+  success: true,
+  data: {
+    items: [
+      {
+        id: string
+        method: string
+        consultationDate: string
+        timeSlot: string
+        bookingStatus: string
+        paymentStatus: string
+        consultant?: {
+          displayName: string
+          title: string
+          avatarUrl?: string
+        }
+        createdAt: string
       }
-      createdAt: string
-    }
-  ]
-  nextCursor?: string
+    ]
+    nextCursor?: string
+  },
+  error: null
 }
 ```
 
-### 注意事項
-
-- 不接受前端傳入 `profileId` 查詢。
-- 一般使用者只能看到自己的 booking。
-- admin 查詢應未來另開 admin-only API，不要混在這支。
-
 ---
 
-## 4.4 `GET /api/v1/consultations/:bookingId`
-
-### 用途
-
-查詢單一預約詳情。
-
-### Auth
-
-需要登入。
-
-### 權限
-
-- 一般使用者只能查詢自己的 booking。
-- admin 權限未來另開，不建議 MVP 混在同一流程。
-
-### Response
-
-```ts
-{
-  id: string
-  method: string
-  consultationDate: string
-  timeSlot: string
-  designField: string
-  designFocus: string
-  notes?: string
-  bookingStatus: string
-  paymentStatus: string
-  contactName?: string
-  contactEmail: string
-  consultant?: {
-    displayName: string
-    title: string
-    avatarUrl?: string
-  }
-  createdAt: string
-  updatedAt: string
-}
-```
-
-### 注意事項
-
-- `bookingId` 只代表查詢目標，不代表使用者一定有權限讀取。
-- repository 查出資料後，service 必須檢查 `profileId` 是否屬於目前登入使用者。
-
----
-
-## 4.5 `GET /api/v1/consultations/availability?date=YYYY-MM-DD`
+## 9. `GET /api/v1/consultations/availability`
 
 ### 用途
 
@@ -357,9 +432,7 @@ where: {
 
 ### Auth
 
-建議需要登入。
-
-若首頁或公開頁需要展示可預約時段，未來可另評估是否開 public API。
+建議需要登入。若未來需要公開展示可預約時段，再另行評估 public API。
 
 ### Query parameters
 
@@ -371,17 +444,21 @@ date=YYYY-MM-DD
 
 ```ts
 {
-  date: '2026-07-01'
-  slots: [
-    {
-      timeSlot: 'am'
-      available: true
-    },
-    {
-      timeSlot: 'pm'
-      available: false
-    }
-  ]
+  success: true,
+  data: {
+    date: '2026-07-01'
+    slots: [
+      {
+        timeSlot: 'am'
+        available: true
+      },
+      {
+        timeSlot: 'pm'
+        available: false
+      }
+    ]
+  },
+  error: null
 }
 ```
 
@@ -389,103 +466,125 @@ date=YYYY-MM-DD
 
 - availability API 只作為 UX 提示。
 - checkout API 仍必須再次檢查可用性。
-- DB 層若已設 partial unique index，仍要處理 conflict error。
+- DB partial unique index 仍是避免 double-booking 的最後防線。
 
 ---
 
-## 5. 可做但非第一優先 API
-
-## 5.1 `GET /api/v1/consultants`
+## 10. `GET /api/v1/consultants/match`
 
 ### 用途
 
-如果前端需要展示顧問卡片，才需要這支 API。
+顧問諮詢頁載入時，顯示目前登入使用者的 matched consultant。實際 checkout 時，後端仍需重新媒合，避免前端顯示結果成為可信資料。
 
 ### Auth
 
-可視產品設計決定：
+需要登入。
 
-- 若顧問卡片公開展示：可允許 anon
-- 若只在登入後展示：需要 authenticated
-- 若只用於配對：不需要做這支，改由後端 service 內部查詢
-
-### 查詢條件
-
-```ts
-where: {
-  isActive: true
-}
+```txt
+Authorization: Bearer <supabase_access_token>
 ```
 
 ### Response
 
 ```ts
 {
-  items: [
-    {
+  success: true,
+  data: {
+    matchedConsultant: {
       id: string
       displayName: string
       title: string
       avatarUrl?: string
       bio?: string
-      specialty?: string
     }
-  ]
+    matchReason: {
+      source: 'style_dna_result' | 'fallback'
+      matchedStyleGroup?: string
+      matchedSpecialty?: string
+    }
+  },
+  error: null
+}
+```
+
+### 常見錯誤
+
+| 狀態碼 | Code | 情境 |
+|---:|---|---|
+| `401` | `UNAUTHORIZED` | 未登入 |
+| `404` | `PROFILE_NOT_FOUND` | 找不到 profile |
+| `409` | `CONSULTANT_UNAVAILABLE` | 無 active consultant |
+
+### 注意事項
+
+- 前端不得把 `matchedConsultant.id` 放回 checkout payload。
+- Checkout API 需要再次執行 consultant match。
+- 顧問媒合只使用 `is_active = true` 的顧問。
+
+---
+
+## 11. `GET /api/v1/consultants`
+
+### 用途
+
+如果前端需要展示顧問卡片，才需要這支 API。若顧問資料只用於配對，不需要開 public API。
+
+### Auth
+
+可視產品設計決定：
+
+- 顧問卡片公開展示：可允許 anon。
+- 只在登入後展示：需要 authenticated。
+- 只用於配對：不建立此 API，由 service 內部查詢。
+
+### Response
+
+```ts
+{
+  success: true,
+  data: {
+    items: [
+      {
+        id: string
+        displayName: string
+        title: string
+        avatarUrl?: string
+        bio?: string
+        specialty?: string
+      }
+    ]
+  },
+  error: null
 }
 ```
 
 ### 注意事項
 
+- 只回傳 `is_active = true` 的顧問。
 - 一般使用者不可新增、修改、刪除顧問。
 - 停用顧問不可出現在前端清單。
-- 若顧問資料只用於配對，不建議開 public API。
 
 ---
 
-## 5.2 `POST /api/v1/consultations/:bookingId/cancel`
+## 12. 後續 API
 
-### 用途
+### 12.1 `POST /api/v1/consultations/:bookingId/cancel`
 
-使用者取消尚未完成或尚未付款的預約。
+用途：使用者取消尚未完成或尚未付款的預約。
 
-### Auth
-
-需要登入。
-
-### MVP 建議支援狀態
+第一階段建議只支援：
 
 ```txt
 pending_payment → canceled
 ```
 
-### Request body
+已付款後取消會牽涉退款，不建議混在第一版流程。
 
-```ts
-{
-  reason?: string
-}
-```
+### 12.2 `POST /api/v1/payments/:paymentId/refund`
 
-### 注意事項
+用途：建立退款。建議設計為 admin-only API。
 
-- 已付款後取消會牽涉退款，不建議混在 MVP。
-- 已付款取消應未來另接 refund policy。
-
----
-
-## 5.3 `POST /api/v1/payments/:paymentId/refund`
-
-### 用途
-
-建立退款。
-
-### 建議
-
-MVP 暫時不做。
-
-若未來要做，應是 admin-only API。
-
-### 未來需要處理
+未來需要定義：
 
 ```txt
 退款原因
@@ -500,150 +599,25 @@ bookingStatus 是否同步更新
 
 ---
 
-## 6. 建議 module 拆法
-
-```txt
-src/modules/
-  consultation/
-    routes.ts
-    schema.ts
-    service.ts
-    repository.ts
-    types.ts
-
-  payments/
-    routes.ts
-    stripeWebhook.routes.ts
-    schema.ts
-    service.ts
-    repository.ts
-    types.ts
-
-  consultant-match/
-    service.ts
-    repository.ts
-    types.ts
-
-  consultants/
-    routes.ts
-    schema.ts
-    service.ts
-    repository.ts
-    types.ts
-```
-
----
-
-## 7. 分層責任
-
-| 檔案 | 責任 |
-|---|---|
-| `routes.ts` | 接 HTTP request、取得 auth context、呼叫 schema validation、呼叫 service |
-| `schema.ts` | 驗證 body / query / params、拒絕 unknown fields、禁止 client 傳入敏感欄位 |
-| `service.ts` | business logic、狀態流轉、付款流程、顧問配對流程 |
-| `repository.ts` | 封裝 Prisma query，不放複雜 business logic |
-| `types.ts` | module 內部共用型別 |
-| `stripeWebhook.routes.ts` | 使用 raw body 處理 Stripe webhook |
-
----
-
-## 8. 建議安裝套件
-
-目前已規劃：
-
-```bash
-npm install stripe @supabase/supabase-js zod
-```
-
-建議 MVP 追加：
-
-```bash
-npm install helmet cors morgan dotenv express-rate-limit
-npm install -D @types/cors @types/morgan
-```
-
-如果專案尚未安裝 Prisma：
-
-```bash
-npm install @prisma/client
-npm install -D prisma
-```
-
-如果要提供 Swagger UI：
-
-```bash
-npm install swagger-ui-express
-npm install -D @types/swagger-ui-express
-```
-
-如果未來想由 Zod schema 產生 OpenAPI：
-
-```bash
-npm install @asteasolutions/zod-to-openapi
-```
-
----
-
-## 9. 套件判斷
-
-| 套件 | 是否需要 | 原因 |
-|---|---:|---|
-| `stripe` | 需要 | 建立 Checkout Session、處理 webhook |
-| `@supabase/supabase-js` | 需要 | 驗證 Supabase Auth token、查 Auth user |
-| `zod` | 需要 | API request validation |
-| `helmet` | 需要 | 基本 HTTP security headers |
-| `cors` | 需要 | 限制前端網域呼叫 API |
-| `morgan` | 可用 | MVP request logging 夠用 |
-| `dotenv` | 需要 | 本機讀取 env |
-| `express-rate-limit` | 建議 | 限制 checkout / API 濫用 |
-| `swagger-ui-express` | 可用 | 提供 `/api-docs` 文件展示 |
-| `@asteasolutions/zod-to-openapi` | 未來可用 | 減少 Zod 與 OpenAPI 雙重維護 |
-| `raw-body` | 不需要 | Express 內建 `express.raw()` 足夠 |
-| `body-parser` | 不需要 | Express 內建 JSON parser 足夠 |
-| `cookie-parser` | 暫時不需要 | 若使用 Bearer token，不需 cookie session |
-| `jsonwebtoken` | 暫時不需要 | Supabase Auth 不建議自行手刻 JWT 驗證 |
-| Redis | 暫時不需要 | MVP 尚無 queue / distributed lock / shared cache 需求 |
-
----
-
-## 10. 建議實作順序
+## 13. 建議實作順序
 
 ```txt
 1. 建立 auth middleware / getAuthContext
 2. 實作 POST /api/v1/consultations/checkout
 3. 實作 POST /api/v1/payments/stripe/webhook
-4. 實作 GET /api/v1/consultations/me
-5. 實作 GET /api/v1/consultations/:bookingId
+4. 實作 GET /api/v1/consultations/:bookingId
+5. 實作 GET /api/v1/consultations/me
 6. 實作 GET /api/v1/consultations/availability
-7. 視前端需求補 GET /api/v1/consultants
-8. 未來再補 cancel / refund / admin API
+7. 視前端需求補 GET /api/v1/consultants/match
+8. 視前端需求補 GET /api/v1/consultants
+9. 未來再補 cancel / refund / admin API
 ```
 
 ---
 
-## 11. 測試重點
+## 14. 暫時不需要
 
-MVP 至少應測：
-
-```txt
-checkout API 拒絕 unknown fields
-checkout API 不接受 amount / paymentStatus / consultantId
-未登入不能 checkout
-checkout 會建立 booking + payment + Stripe session
-webhook 驗證 Stripe signature
-重複 webhook event 不會重複處理
-付款成功後 paymentStatus = paid
-付款成功後 bookingStatus = confirmed
-付款成功後才執行 consultant-match
-使用者只能查自己的 booking
-availability 回傳正確時段狀態
-```
-
----
-
-## 12. 暫時不需要
-
-MVP 階段暫時不需要：
+第一版暫時不需要：
 
 ```txt
 Redis
@@ -657,4 +631,4 @@ CQRS
 Kubernetes
 ```
 
-等到真的出現跨 server rate limiting、非同步 webhook retry、背景任務、排班規則或高頻查詢瓶頸，再討論這些工具。現在先把基本 API 做乾淨，對這個專案比較實際。
+等到出現跨 server rate limiting、非同步 webhook retry、背景任務、排班規則或高頻查詢瓶頸，再評估引入。

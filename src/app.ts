@@ -11,11 +11,16 @@ import { createSupabaseAuthVerifier } from './middleware/requireAuth.js'
 import { createConsultationRepository } from './modules/consultation/repository.js'
 import { createConsultationRouter } from './modules/consultation/routes.js'
 import { createConsultationCheckoutService } from './modules/consultation/service.js'
-import { createPaymentRepository } from './modules/payments/repository.js'
+import {
+  createPaymentRepository,
+  createStripeWebhookRepository
+} from './modules/payments/repository.js'
+import { createStripeWebhookRouter } from './modules/payments/routes.js'
 import {
   createPaymentCheckoutService,
   createStripeCheckoutGateway
 } from './modules/payments/service.js'
+import { createStripeWebhookService } from './modules/payments/webhook-service.js'
 
 export const app = express()
 
@@ -27,19 +32,28 @@ const supabase = createClient(env.supabaseUrl, env.supabaseAnonKey, {
 })
 const stripe = new Stripe(env.stripeSecretKey)
 const consultationRepository = createConsultationRepository(prisma)
+const paymentRepository = createPaymentRepository(prisma)
 const paymentService = createPaymentCheckoutService({
   stripe: createStripeCheckoutGateway(stripe),
-  payments: createPaymentRepository(prisma),
+  payments: paymentRepository,
   stripePriceId: env.stripeConsultationPriceId,
   successUrl: new URL(
     env.stripeCheckoutSuccessPath,
-    env.frontendOrigin
+    env.frontendUrl
   ).toString(),
   cancelUrl: new URL(
     env.stripeCheckoutCancelPath,
-    env.frontendOrigin
+    env.frontendUrl
   ).toString(),
   now: () => new Date()
+})
+const stripeWebhookRouter = createStripeWebhookRouter({
+  stripe,
+  webhookSecret: env.stripeWebhookSecret,
+  handleWebhook: createStripeWebhookService({
+    repository: createStripeWebhookRepository(prisma),
+    now: () => new Date()
+  })
 })
 const checkout = createConsultationCheckoutService({
   consultations: consultationRepository,
@@ -62,6 +76,7 @@ app.use(
   })
 )
 
+app.use('/api/v1/payments/stripe/webhook', stripeWebhookRouter)
 app.use(express.json())
 app.use('/api/v1/consultations', consultationRouter)
 
