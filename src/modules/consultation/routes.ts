@@ -8,18 +8,24 @@ import {
 } from '../../middleware/requireAuth.js'
 import { validateRequest } from '../../middleware/validateRequest.js'
 import {
+  bookingIdSchema,
   createCheckoutSchema,
   idempotencyKeySchema
 } from './schema.js'
 import type {
   CheckoutRequest,
   CheckoutResult,
+  ConsultationDetailsRequest,
+  ConsultationDetailsResult,
   CreateCheckoutInput
 } from './types.js'
 
 interface ConsultationRouterDependencies {
   authVerifier: AuthVerifier
   checkout(request: CheckoutRequest): Promise<CheckoutResult>
+  getBooking(
+    request: ConsultationDetailsRequest
+  ): Promise<ConsultationDetailsResult>
   rateLimit: {
     windowMs: number
     limit: number
@@ -45,6 +51,28 @@ const validateIdempotencyKey: RequestHandler = (req, res, next) => {
   }
 
   res.locals.idempotencyKey = result.data
+  next()
+}
+
+const validateBookingId: RequestHandler = (req, res, next) => {
+  const result = bookingIdSchema.safeParse(req.params.bookingId)
+
+  if (!result.success) {
+    throw new AppError(
+      400,
+      'VALIDATION_ERROR',
+      'Request validation failed.',
+      [
+        {
+          path: ['params', 'bookingId'],
+          code: 'invalid_format',
+          message: 'bookingId must be a UUID.'
+        }
+      ]
+    )
+  }
+
+  res.locals.bookingId = result.data
   next()
 }
 
@@ -90,6 +118,24 @@ export const createConsultationRouter = (
       const result = await dependencies.checkout(request)
 
       res.status(201).json({
+        success: true,
+        data: result,
+        error: null
+      })
+    }
+  )
+
+  router.get(
+    '/:bookingId',
+    createRequireAuth(dependencies.authVerifier),
+    validateBookingId,
+    async (_req, res) => {
+      const result = await dependencies.getBooking({
+        bookingId: res.locals.bookingId as string,
+        auth: res.locals.auth
+      })
+
+      res.json({
         success: true,
         data: result,
         error: null

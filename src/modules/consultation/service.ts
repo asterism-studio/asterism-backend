@@ -4,7 +4,10 @@ import type {
   CheckoutCommand,
   CheckoutDependencies,
   CheckoutRequest,
-  CheckoutResult
+  CheckoutResult,
+  ConsultationDetailsRequest,
+  ConsultationDetailsResult,
+  ConsultationRepository
 } from './types.js'
 
 const normalizeIntent = (booking: BookingRecord) => ({
@@ -156,5 +159,62 @@ export const createConsultationCheckoutService = (
       ...draft,
       price
     })
+  }
+}
+
+export const createConsultationQueryService = (
+  consultations: Pick<ConsultationRepository, 'findDetails'>
+) => {
+  return async (
+    request: ConsultationDetailsRequest
+  ): Promise<ConsultationDetailsResult> => {
+    const details = await consultations.findDetails(request.bookingId)
+
+    if (!details?.payment) {
+      throw new AppError(
+        404,
+        'BOOKING_NOT_FOUND',
+        'The consultation booking was not found.'
+      )
+    }
+
+    if (details.profileId !== request.auth.userId) {
+      throw new AppError(
+        403,
+        'FORBIDDEN',
+        'This consultation booking belongs to another user.'
+      )
+    }
+
+    return {
+      booking: {
+        id: details.booking.id,
+        status: details.booking.status,
+        method: details.booking.method,
+        consultationDate: details.booking.consultationDate,
+        timeSlot: details.booking.timeSlot,
+        designField: details.booking.designField ?? undefined,
+        designFocus: details.booking.designFocus ?? undefined,
+        notes: details.booking.notes ?? undefined,
+        contactName: details.booking.contactName ?? undefined,
+        contactEmail: details.booking.contactEmail,
+        createdAt: details.booking.createdAt.toISOString(),
+        updatedAt: details.booking.updatedAt.toISOString()
+      },
+      payment: {
+        status: details.payment.status,
+        amount: details.payment.amount,
+        currency: details.payment.currency as 'TWD',
+        paidAt: details.payment.paidAt?.toISOString()
+      },
+      consultant: details.consultant
+        ? {
+            id: details.consultant.id,
+            displayName: details.consultant.displayName,
+            title: details.consultant.title,
+            avatarUrl: details.consultant.avatarUrl ?? undefined
+          }
+        : undefined
+    }
   }
 }
