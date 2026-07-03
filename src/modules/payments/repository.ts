@@ -66,7 +66,16 @@ export const createStripeWebhookRepository = (
       skipDuplicates: true
     })
 
-    return result.count === 1
+    if (result.count === 1) {
+      return true
+    }
+
+    const event = await database.stripeWebhookEvent.findUnique({
+      where: { stripeEventId: input.stripeEventId },
+      select: { processedAt: true }
+    })
+
+    return event?.processedAt === null
   },
 
   processEvent: async (input) => {

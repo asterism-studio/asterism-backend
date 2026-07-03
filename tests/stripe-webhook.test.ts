@@ -204,6 +204,7 @@ const createDatabaseFixture = (
         state.eventExists = true
         return { count: 1 }
       },
+      findUnique: async () => state.event,
       update: async ({ data }: { data: Partial<typeof state.event> }) => {
         Object.assign(state.event, data)
         return state.event
@@ -333,8 +334,8 @@ test('repository records unknown payments and state conflicts without mutation',
   assert.ok(conflict.state.event.processedAt)
 })
 
-test('repository uses the unique event record as its duplicate guard', async () => {
-  const { repository } = createDatabaseFixture()
+test('repository retries unprocessed duplicates and ignores processed duplicates', async () => {
+  const { repository, state } = createDatabaseFixture()
   const input = {
     stripeEventId: 'evt_test',
     eventType: 'checkout.session.completed',
@@ -342,6 +343,9 @@ test('repository uses the unique event record as its duplicate guard', async () 
   }
 
   assert.equal(await repository.recordEvent(input), true)
+  assert.equal(await repository.recordEvent(input), true)
+
+  state.event.processedAt = new Date('2026-07-02T00:00:00.000Z')
   assert.equal(await repository.recordEvent(input), false)
 })
 
