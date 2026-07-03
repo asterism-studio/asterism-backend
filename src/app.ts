@@ -10,7 +10,10 @@ import { errorHandler } from './middleware/errorHandler.js'
 import { createSupabaseAuthVerifier } from './middleware/requireAuth.js'
 import { createConsultationRepository } from './modules/consultation/repository.js'
 import { createConsultationRouter } from './modules/consultation/routes.js'
-import { createConsultationCheckoutService } from './modules/consultation/service.js'
+import {
+  createConsultationCheckoutService,
+  createConsultationQueryService
+} from './modules/consultation/service.js'
 import {
   createPaymentRepository,
   createStripeWebhookRepository
@@ -63,6 +66,7 @@ const checkout = createConsultationCheckoutService({
 const consultationRouter = createConsultationRouter({
   authVerifier: createSupabaseAuthVerifier(supabase),
   checkout,
+  getBooking: createConsultationQueryService(consultationRepository),
   rateLimit: {
     windowMs: 10 * 60 * 1000,
     limit: 5

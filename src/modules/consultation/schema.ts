@@ -64,4 +64,5 @@ export const createCheckoutSchema = z
   .strict()
 
 export const idempotencyKeySchema = z.uuid()
+export const bookingIdSchema = z.uuid()
 

@@ -18,6 +18,13 @@ export type BookingStatus =
   | 'canceled'
   | 'completed'
 
+export type PaymentStatus =
+  | 'pending'
+  | 'paid'
+  | 'failed'
+  | 'canceled'
+  | 'refunded'
+
 export interface BookingRecord {
   id: string
   profileId: string
@@ -55,6 +62,70 @@ export interface CheckoutRequest {
   input: CreateCheckoutInput
 }
 
+export interface ConsultationDetailsRecord {
+  profileId: string
+  booking: {
+    id: string
+    status: BookingStatus
+    method: CreateCheckoutInput['method']
+    consultationDate: string
+    timeSlot: CreateCheckoutInput['timeSlot']
+    designField: string | null
+    designFocus: string | null
+    notes: string | null
+    contactName: string | null
+    contactEmail: string
+    createdAt: Date
+    updatedAt: Date
+  }
+  payment: {
+    status: PaymentStatus
+    amount: number
+    currency: string
+    paidAt: Date | null
+  } | null
+  consultant: {
+    id: string
+    displayName: string
+    title: string
+    avatarUrl: string | null
+  } | null
+}
+
+export interface ConsultationDetailsRequest {
+  bookingId: string
+  auth: AuthContext
+}
+
+export interface ConsultationDetailsResult {
+  booking: {
+    id: string
+    status: BookingStatus
+    method: CreateCheckoutInput['method']
+    consultationDate: string
+    timeSlot: CreateCheckoutInput['timeSlot']
+    designField?: string
+    designFocus?: string
+    notes?: string
+    contactName?: string
+    contactEmail: string
+    createdAt: string
+    updatedAt: string
+  }
+  payment: {
+    status: PaymentStatus
+    amount: number
+    currency: 'TWD'
+    paidAt?: string
+  }
+  consultant?: {
+    id: string
+    displayName: string
+    title: string
+    avatarUrl?: string
+  }
+}
+
 export interface CheckoutCommand {
   idempotencyKey: string
   auth: {
@@ -76,6 +147,7 @@ export interface CheckoutPrice {
 }
 
 export interface ConsultationRepository {
+  findDetails(bookingId: string): Promise<ConsultationDetailsRecord | null>
   findCheckout(
     profileId: string,
     idempotencyKey: string

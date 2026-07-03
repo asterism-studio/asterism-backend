@@ -52,6 +52,67 @@ const isUniqueConstraintError = (error: unknown): boolean =>
 export const createConsultationRepository = (
   database: PrismaClient
 ): ConsultationRepository => ({
+  findDetails: async (bookingId) => {
+    const booking = await database.consultationBooking.findUnique({
+      where: { id: bookingId },
+      select: {
+        profileId: true,
+        id: true,
+        status: true,
+        method: true,
+        consultationDate: true,
+        timeSlot: true,
+        designField: true,
+        designFocus: true,
+        notes: true,
+        contactName: true,
+        contactEmail: true,
+        createdAt: true,
+        updatedAt: true,
+        payment: {
+          select: {
+            status: true,
+            amount: true,
+            currency: true,
+            paidAt: true
+          }
+        },
+        consultant: {
+          select: {
+            id: true,
+            displayName: true,
+            title: true,
+            avatarUrl: true
+          }
+        }
+      }
+    })
+
+    if (!booking) {
+      return null
+    }
+
+    return {
+      profileId: booking.profileId,
+      booking: {
+        id: booking.id,
+        status: booking.status,
+        method: booking.method,
+        consultationDate: toDateOnly(booking.consultationDate),
+        timeSlot: booking.timeSlot,
+        designField: booking.designField,
+        designFocus: booking.designFocus,
+        notes: booking.notes,
+        contactName: booking.contactName,
+        contactEmail: booking.contactEmail,
+        createdAt: booking.createdAt,
+        updatedAt: booking.updatedAt
+      },
+      payment: booking.payment,
+      consultant: booking.consultant
+    }
+  },
+
   findCheckout: async (profileId, idempotencyKey) => {
     const booking = await database.consultationBooking.findUnique({
       where: {
