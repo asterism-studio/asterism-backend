@@ -24,10 +24,10 @@ const processingFailed = (): AppError =>
 export const createStripeWebhookService = (
   dependencies: CreateStripeWebhookDependencies
 ): StripeWebhookHandler => async (event, payload) => {
-  let created
+  let shouldProcess
 
   try {
-    created = await dependencies.repository.recordEvent({
+    shouldProcess = await dependencies.repository.recordOrResumeEvent({
       stripeEventId: event.id,
       eventType: event.type,
       payload
@@ -36,7 +36,7 @@ export const createStripeWebhookService = (
     throw processingFailed()
   }
 
-  if (!created) {
+  if (!shouldProcess) {
     return
   }
 

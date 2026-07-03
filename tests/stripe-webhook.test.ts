@@ -42,7 +42,7 @@ const createServiceFixture = (options: {
   const processed: ProcessStripeEventInput[] = []
   const errors: Array<{ stripeEventId: string; reason: string }> = []
   const repository: StripeWebhookRepository = {
-    recordEvent: async () => {
+    recordOrResumeEvent: async () => {
       if (options.recordFailure) {
         throw new Error('event insert unavailable')
       }
@@ -342,11 +342,11 @@ test('repository retries unprocessed duplicates and ignores processed duplicates
     payload: { id: 'evt_test' }
   }
 
-  assert.equal(await repository.recordEvent(input), true)
-  assert.equal(await repository.recordEvent(input), true)
+  assert.equal(await repository.recordOrResumeEvent(input), true)
+  assert.equal(await repository.recordOrResumeEvent(input), true)
 
   state.event.processedAt = new Date('2026-07-02T00:00:00.000Z')
-  assert.equal(await repository.recordEvent(input), false)
+  assert.equal(await repository.recordOrResumeEvent(input), false)
 })
 
 const withServer = async (

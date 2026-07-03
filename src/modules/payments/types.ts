@@ -75,7 +75,7 @@ export interface ProcessStripeEventInput {
 }
 
 export interface StripeWebhookRepository {
-  recordEvent(input: RecordStripeEventInput): Promise<boolean>
+  recordOrResumeEvent(input: RecordStripeEventInput): Promise<boolean>
   processEvent(input: ProcessStripeEventInput): Promise<void>
   recordProcessingError(
     stripeEventId: string,

@@ -56,7 +56,7 @@ const ignoredReason = (
 export const createStripeWebhookRepository = (
   database: PrismaClient
 ): StripeWebhookRepository => ({
-  recordEvent: async (input) => {
+  recordOrResumeEvent: async (input) => {
     const result = await database.stripeWebhookEvent.createMany({
       data: {
         stripeEventId: input.stripeEventId,
@@ -80,7 +80,7 @@ export const createStripeWebhookRepository = (
 
   processEvent: async (input) => {
     await database.$transaction(async (transaction) => {
-      const finish = (processingError: string | null) =>
+      const markEventProcessed = (processingError: string | null) =>
         transaction.stripeWebhookEvent.update({
           where: { stripeEventId: input.stripeEventId },
           data: {
@@ -90,12 +90,16 @@ export const createStripeWebhookRepository = (
         })
 
       if (!input.transition) {
-        await finish(`Ignored unsupported Stripe event: ${input.eventType}.`)
+        await markEventProcessed(
+          `Ignored unsupported Stripe event: ${input.eventType}.`
+        )
         return
       }
 
       if (!input.sessionId) {
-        await finish(`Ignored ${input.eventType}: Checkout Session ID is missing.`)
+        await markEventProcessed(
+          `Ignored ${input.eventType}: Checkout Session ID is missing.`
+        )
         return
       }
 
@@ -105,7 +109,7 @@ export const createStripeWebhookRepository = (
       })
 
       if (!payment) {
-        await finish(
+        await markEventProcessed(
           `Payment not found for Checkout Session ${input.sessionId}.`
         )
         return
@@ -115,7 +119,7 @@ export const createStripeWebhookRepository = (
         payment.status !== 'pending' ||
         payment.booking.status !== 'pending_payment'
       ) {
-        await finish(
+        await markEventProcessed(
           ignoredReason(
             input,
             payment.status,
@@ -161,7 +165,7 @@ export const createStripeWebhookRepository = (
         )
       }
 
-      await finish(null)
+      await markEventProcessed(null)
     })
   },
 
