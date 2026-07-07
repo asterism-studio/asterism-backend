@@ -14,6 +14,7 @@
     "db:migrate": "prisma migrate dev",
     "enrich:images": "tsx scripts/enrich/index.ts",
     "reclassify:submedium": "tsx scripts/reclassifySubMedium.ts",
+    "backfill:source-url": "tsx scripts/backfillSourceUrl.ts",
     "recompute:needs-review": "tsx scripts/recomputeNeedsReview.ts"
   },
   "keywords": [],

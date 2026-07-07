@@ -7,6 +7,8 @@ interface UnsplashPhoto {
   alt_description: string | null;
   user: { name: string };
   urls: { regular: string };
+  // 這張圖在 unsplash.com 上的原始頁面連結（跟 urls.regular 這個圖片素材網址不同）。
+  links: { html: string };
 }
 
 // 需要環境變數 UNSPLASH_ACCESS_KEY（Unsplash Developers 免費申請）。
@@ -29,6 +31,7 @@ export async function searchUnsplash(query: string, perPage = 15, page = 1): Pro
     source: 'unsplash' as const,
     externalId: photo.id,
     url: photo.urls.regular,
+    sourceUrl: photo.links.html,
     description: photo.alt_description ?? '',
     photographer: photo.user.name
   }));

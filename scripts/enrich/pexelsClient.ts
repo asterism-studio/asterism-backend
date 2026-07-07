@@ -6,6 +6,8 @@ interface PexelsPhoto {
   id: number;
   alt: string | null;
   photographer: string | null;
+  // Pexels 這張圖在 pexels.com 上的原始頁面連結，跟 src.large（圖片素材網址）是不同欄位。
+  url: string;
   src: { large: string };
 }
 
@@ -27,6 +29,7 @@ export async function searchPexels(query: string, perPage = 15, page = 1): Promi
     source: 'pexels' as const,
     externalId: String(photo.id),
     url: photo.src.large,
+    sourceUrl: photo.url,
     description: photo.alt ?? '',
     photographer: photo.photographer ?? 'Unknown'
   }));

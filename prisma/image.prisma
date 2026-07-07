@@ -8,6 +8,8 @@ model Image {
   subMedium    String?  @map("sub_medium") @db.Text
   colorPalette String[] @default([]) @map("color_palette")
   attribution  String   @db.Text
+  // 圖片原始出處頁面（Pexels/Unsplash 的 photo 頁連結）；本地／Asterism 自製圖沒有外部出處，維持 null。
+  sourceUrl    String?  @map("source_url") @db.Text
   confidence   Json
   needsReview  Json     @map("needs_review")
   createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
