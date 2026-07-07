@@ -64,12 +64,19 @@ async function main(): Promise<void> {
     let updated = 0;
     let skipped = 0;
     let rateLimited = 0;
+    // 兩個來源的額度是分開的；一個撞到就跳過同來源剩下的列，不要連另一個來源也一起停下來。
+    const rateLimitedSources = new Set<'pexels' | 'unsplash'>();
 
     for (const row of rows) {
       const parsed = parseExternalId(row.id);
       if (!parsed) {
         skipped += 1;
         console.warn(`略過 ${row.id}（id 格式不符 ext-{pexels|unsplash}-{externalId}）`);
+        continue;
+      }
+
+      if (rateLimitedSources.has(parsed.source)) {
+        skipped += 1;
         continue;
       }
 
@@ -85,8 +92,9 @@ async function main(): Promise<void> {
         const message = (error as Error).message;
         if (message.includes('429') || message.includes('403')) {
           rateLimited += 1;
-          console.warn(`[${row.id}] 疑似撞到 rate limit，停止本次執行：`, message);
-          break; // 額度用完先停下來；source_url 還是 NULL，之後重跑腳本會從這裡繼續
+          rateLimitedSources.add(parsed.source);
+          console.warn(`[${parsed.source}] 疑似撞到 rate limit，這個來源之後的列先跳過：`, message);
+          continue;
         }
         skipped += 1;
         console.warn(`[${row.id}] 補回 source_url 失敗，略過：`, message);
