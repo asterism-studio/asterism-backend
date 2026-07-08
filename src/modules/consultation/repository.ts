@@ -49,6 +49,20 @@ const isUniqueConstraintError = (error: unknown): boolean =>
   'code' in error &&
   error.code === 'P2002'
 
+export const occupiedSlotWhere = (
+  now: Date
+): Prisma.ConsultationBookingWhereInput => ({
+  OR: [
+    { status: { in: ['confirmed', 'completed'] } },
+    {
+      status: 'pending_payment',
+      payment: {
+        is: { checkoutExpiresAt: { gt: now } }
+      }
+    }
+  ]
+})
+
 export const createConsultationRepository = (
   database: PrismaClient
 ): ConsultationRepository => ({
@@ -56,15 +70,7 @@ export const createConsultationRepository = (
     const bookings = await database.consultationBooking.findMany({
       where: {
         consultationDate: toDatabaseDate(date),
-        OR: [
-          { status: { in: ['confirmed', 'completed'] } },
-          {
-            status: 'pending_payment',
-            payment: {
-              is: { checkoutExpiresAt: { gt: now } }
-            }
-          }
-        ]
+        ...occupiedSlotWhere(now)
       },
       select: { timeSlot: true },
       distinct: ['timeSlot']
@@ -233,15 +239,7 @@ export const createConsultationRepository = (
           where: {
             ...slot,
             ...excludeExisting,
-            OR: [
-              { status: { in: ['confirmed', 'completed'] } },
-              {
-                status: 'pending_payment',
-                payment: {
-                  is: { checkoutExpiresAt: { gt: acceptedAt } }
-                }
-              }
-            ]
+            ...occupiedSlotWhere(acceptedAt)
           },
           select: { id: true }
         })

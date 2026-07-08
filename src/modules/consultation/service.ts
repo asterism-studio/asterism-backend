@@ -228,6 +228,7 @@ export const createConsultationAvailabilityService = (dependencies: {
   return async (
     request: ConsultationAvailabilityRequest
   ): Promise<ConsultationAvailabilityResult> => {
+    // Availability is authenticated at route level. Auth stays on the request for user-specific rules.
     const occupied = new Set(
       await dependencies.consultations.findOccupiedSlots(
         request.date,

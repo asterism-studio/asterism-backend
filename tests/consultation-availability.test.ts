@@ -5,6 +5,10 @@ import test from 'node:test'
 import express, { type Express } from 'express'
 
 import { errorHandler } from '../src/middleware/errorHandler.js'
+import {
+  createConsultationRepository,
+  occupiedSlotWhere
+} from '../src/modules/consultation/repository.js'
 import { createConsultationRouter } from '../src/modules/consultation/routes.js'
 import { createConsultationAvailabilityService } from '../src/modules/consultation/service.js'
 
@@ -20,6 +24,7 @@ const availableResult = {
     { timeSlot: 'pm' as const, available: false }
   ]
 }
+const now = new Date('2099-06-01T00:00:00.000Z')
 
 const withServer = async (
   app: Express,
@@ -54,6 +59,45 @@ test('availability service returns fixed am and pm slots with occupied slots una
     await availability({ date: '2099-07-01', auth }),
     availableResult
   )
+})
+
+test('occupied slot rule matches checkout and availability requirements', () => {
+  assert.deepEqual(occupiedSlotWhere(now), {
+    OR: [
+      { status: { in: ['confirmed', 'completed'] } },
+      {
+        status: 'pending_payment',
+        payment: {
+          is: { checkoutExpiresAt: { gt: now } }
+        }
+      }
+    ]
+  })
+})
+
+test('availability repository queries distinct occupied slots for the requested date', async () => {
+  let findManyInput: unknown
+  const repository = createConsultationRepository({
+    consultationBooking: {
+      findMany: async (input: unknown) => {
+        findManyInput = input
+        return [{ timeSlot: 'am' }, { timeSlot: 'pm' }]
+      }
+    }
+  } as Parameters<typeof createConsultationRepository>[0])
+
+  assert.deepEqual(
+    await repository.findOccupiedSlots('2099-07-01', now),
+    ['am', 'pm']
+  )
+  assert.deepEqual(findManyInput, {
+    where: {
+      consultationDate: new Date('2099-07-01T00:00:00.000Z'),
+      ...occupiedSlotWhere(now)
+    },
+    select: { timeSlot: true },
+    distinct: ['timeSlot']
+  })
 })
 
 const createAvailabilityHttpApp = () => {
