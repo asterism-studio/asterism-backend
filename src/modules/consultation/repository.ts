@@ -52,6 +52,27 @@ const isUniqueConstraintError = (error: unknown): boolean =>
 export const createConsultationRepository = (
   database: PrismaClient
 ): ConsultationRepository => ({
+  findOccupiedSlots: async (date, now) => {
+    const bookings = await database.consultationBooking.findMany({
+      where: {
+        consultationDate: toDatabaseDate(date),
+        OR: [
+          { status: { in: ['confirmed', 'completed'] } },
+          {
+            status: 'pending_payment',
+            payment: {
+              is: { checkoutExpiresAt: { gt: now } }
+            }
+          }
+        ]
+      },
+      select: { timeSlot: true },
+      distinct: ['timeSlot']
+    })
+
+    return bookings.map((booking) => booking.timeSlot)
+  },
+
   findDetails: async (bookingId) => {
     const booking = await database.consultationBooking.findUnique({
       where: { id: bookingId },

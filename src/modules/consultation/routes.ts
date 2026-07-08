@@ -8,6 +8,7 @@ import {
 } from '../../middleware/requireAuth.js'
 import { validateRequest } from '../../middleware/validateRequest.js'
 import {
+  availabilityDateSchema,
   bookingIdSchema,
   createCheckoutSchema,
   idempotencyKeySchema
@@ -15,6 +16,8 @@ import {
 import type {
   CheckoutRequest,
   CheckoutResult,
+  ConsultationAvailabilityRequest,
+  ConsultationAvailabilityResult,
   ConsultationDetailsRequest,
   ConsultationDetailsResult,
   CreateCheckoutInput
@@ -23,6 +26,9 @@ import type {
 interface ConsultationRouterDependencies {
   authVerifier: AuthVerifier
   checkout(request: CheckoutRequest): Promise<CheckoutResult>
+  getAvailability(
+    request: ConsultationAvailabilityRequest
+  ): Promise<ConsultationAvailabilityResult>
   getBooking(
     request: ConsultationDetailsRequest
   ): Promise<ConsultationDetailsResult>
@@ -76,6 +82,26 @@ const validateBookingId: RequestHandler = (req, res, next) => {
   next()
 }
 
+const validateAvailabilityDate: RequestHandler = (req, res, next) => {
+  const result = availabilityDateSchema.safeParse(req.query.date)
+
+  if (!result.success) {
+    throw new AppError(
+      400,
+      'VALIDATION_ERROR',
+      'Request validation failed.',
+      result.error.issues.map(({ code, message }) => ({
+        path: ['query', 'date'],
+        code,
+        message
+      }))
+    )
+  }
+
+  res.locals.date = result.data
+  next()
+}
+
 export const createConsultationRouter = (
   dependencies: ConsultationRouterDependencies
 ): Router => {
@@ -118,6 +144,24 @@ export const createConsultationRouter = (
       const result = await dependencies.checkout(request)
 
       res.status(201).json({
+        success: true,
+        data: result,
+        error: null
+      })
+    }
+  )
+
+  router.get(
+    '/availability',
+    createRequireAuth(dependencies.authVerifier),
+    validateAvailabilityDate,
+    async (_req, res) => {
+      const result = await dependencies.getAvailability({
+        date: res.locals.date as string,
+        auth: res.locals.auth
+      })
+
+      res.json({
         success: true,
         data: result,
         error: null

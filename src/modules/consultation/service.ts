@@ -5,6 +5,8 @@ import type {
   CheckoutDependencies,
   CheckoutRequest,
   CheckoutResult,
+  ConsultationAvailabilityRequest,
+  ConsultationAvailabilityResult,
   ConsultationDetailsRequest,
   ConsultationDetailsResult,
   ConsultationRepository
@@ -215,6 +217,30 @@ export const createConsultationQueryService = (
             avatarUrl: details.consultant.avatarUrl ?? undefined
           }
         : undefined
+    }
+  }
+}
+
+export const createConsultationAvailabilityService = (dependencies: {
+  consultations: Pick<ConsultationRepository, 'findOccupiedSlots'>
+  now(): Date
+}) => {
+  return async (
+    request: ConsultationAvailabilityRequest
+  ): Promise<ConsultationAvailabilityResult> => {
+    const occupied = new Set(
+      await dependencies.consultations.findOccupiedSlots(
+        request.date,
+        dependencies.now()
+      )
+    )
+
+    return {
+      date: request.date,
+      slots: (['am', 'pm'] as const).map((timeSlot) => ({
+        timeSlot,
+        available: !occupied.has(timeSlot)
+      }))
     }
   }
 }
