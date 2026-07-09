@@ -97,6 +97,21 @@ export interface ConsultationDetailsRequest {
   auth: AuthContext
 }
 
+export interface ConsultationAvailabilityRequest {
+  date: string
+  auth: AuthContext
+}
+
+export type ConsultationTimeSlot = CreateCheckoutInput['timeSlot']
+
+export interface ConsultationAvailabilityResult {
+  date: string
+  slots: Array<{
+    timeSlot: ConsultationTimeSlot
+    available: boolean
+  }>
+}
+
 export interface ConsultationDetailsResult {
   booking: {
     id: string
@@ -148,6 +163,10 @@ export interface CheckoutPrice {
 
 export interface ConsultationRepository {
   findDetails(bookingId: string): Promise<ConsultationDetailsRecord | null>
+  findOccupiedSlots(
+    date: string,
+    now: Date
+  ): Promise<ConsultationTimeSlot[]>
   findCheckout(
     profileId: string,
     idempotencyKey: string

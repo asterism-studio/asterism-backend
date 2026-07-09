@@ -29,6 +29,14 @@ const getTaipeiDate = (): string => {
   return `${values.year}-${values.month}-${values.day}`
 }
 
+const dateOnlySchema = (fieldName: string) => z
+  .string()
+  .refine(isValidDateOnly, `${fieldName} must be a valid YYYY-MM-DD.`)
+  .refine(
+    (value) => value >= getTaipeiDate(),
+    `${fieldName} cannot be in the past.`
+  )
+
 const optionalTrimmedString = z
   .string()
   .trim()
@@ -47,13 +55,7 @@ export const createCheckoutSchema = z
     method: z
       .enum(['online', 'in-person'])
       .transform((value) => (value === 'in-person' ? 'in_person' : value)),
-    consultationDate: z
-      .string()
-      .refine(isValidDateOnly, 'consultationDate must be a valid YYYY-MM-DD.')
-      .refine(
-        (value) => value >= getTaipeiDate(),
-        'consultationDate cannot be in the past.'
-      ),
+    consultationDate: dateOnlySchema('consultationDate'),
     timeSlot: z.enum(['am', 'pm']),
     designField: z.string().trim().min(1).max(80),
     designFocus: z.string().trim().min(1).max(200),
@@ -65,4 +67,5 @@ export const createCheckoutSchema = z
 
 export const idempotencyKeySchema = z.uuid()
 export const bookingIdSchema = z.uuid()
+export const availabilityDateSchema = dateOnlySchema('date')
 

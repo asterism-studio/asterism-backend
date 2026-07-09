@@ -153,6 +153,9 @@ const createQueryHttpApp = () => {
     checkout: async () => {
       throw new Error('Checkout is outside this test.')
     },
+    getAvailability: async () => {
+      throw new Error('Availability is outside this test.')
+    },
     getBooking: async () => expectedResult,
     rateLimit: {
       windowMs: 60_000,
