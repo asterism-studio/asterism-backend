@@ -124,6 +124,7 @@ const createServiceFixture = (
     consultations: {
       findDetails: async () => null,
       findOccupiedSlots: async () => [],
+      findOccupiedSlotsInRange: async () => [],
       findCheckout: async (profileId, key) => {
         calls.findCheckout = [profileId, key]
         return overrides.existing ?? null

@@ -8,7 +8,7 @@ import {
 } from '../../middleware/requireAuth.js'
 import { validateRequest } from '../../middleware/validateRequest.js'
 import {
-  availabilityDateSchema,
+  availabilityQuerySchema,
   bookingIdSchema,
   createCheckoutSchema,
   idempotencyKeySchema
@@ -82,23 +82,23 @@ const validateBookingId: RequestHandler = (req, res, next) => {
   next()
 }
 
-const validateAvailabilityDate: RequestHandler = (req, res, next) => {
-  const result = availabilityDateSchema.safeParse(req.query.date)
+const validateAvailabilityQuery: RequestHandler = (req, res, next) => {
+  const result = availabilityQuerySchema.safeParse(req.query)
 
   if (!result.success) {
     throw new AppError(
       400,
       'VALIDATION_ERROR',
       'Request validation failed.',
-      result.error.issues.map(({ code, message }) => ({
-        path: ['query', 'date'],
+      result.error.issues.map(({ code, message, path }) => ({
+        path: ['query', ...path],
         code,
         message
       }))
     )
   }
 
-  res.locals.date = result.data
+  res.locals.availabilityQuery = result.data
   next()
 }
 
@@ -154,10 +154,13 @@ export const createConsultationRouter = (
   router.get(
     '/availability',
     createRequireAuth(dependencies.authVerifier),
-    validateAvailabilityDate,
+    validateAvailabilityQuery,
     async (_req, res) => {
+      const query = res.locals.availabilityQuery as
+        | { date: string; month?: undefined }
+        | { date?: undefined; month: string }
       const result = await dependencies.getAvailability({
-        date: res.locals.date as string,
+        ...query,
         auth: res.locals.auth
       })
 
