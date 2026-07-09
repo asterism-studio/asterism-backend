@@ -87,26 +87,19 @@ export const createCheckoutSchema = z
 export const idempotencyKeySchema = z.uuid()
 export const bookingIdSchema = z.uuid()
 export const availabilityDateSchema = dateOnlySchema('date')
-export const availabilityQuerySchema = z
-  .object({
-    date: availabilityDateSchema.optional(),
-    month: monthOnlySchema.optional()
-  })
-  .superRefine(({ date, month }, context) => {
-    if (!date && !month) {
-      context.addIssue({
-        code: 'custom',
-        path: ['date'],
-        message: 'Either date or month is required.'
-      })
-      return
-    }
+export const availabilityQuerySchema = z.union([
+  z
+    .object({
+      date: availabilityDateSchema,
+      month: z.undefined().optional()
+    })
+    .strict(),
+  z
+    .object({
+      date: z.undefined().optional(),
+      month: monthOnlySchema
+    })
+    .strict()
+])
 
-    if (date && month) {
-      context.addIssue({
-        code: 'custom',
-        path: ['month'],
-        message: 'date and month cannot be used together.'
-      })
-    }
-  })
+export type AvailabilityQuery = z.infer<typeof availabilityQuerySchema>

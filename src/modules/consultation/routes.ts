@@ -13,6 +13,7 @@ import {
   createCheckoutSchema,
   idempotencyKeySchema
 } from './schema.js'
+import type { AvailabilityQuery } from './schema.js'
 import type {
   CheckoutRequest,
   CheckoutResult,
@@ -156,9 +157,7 @@ export const createConsultationRouter = (
     createRequireAuth(dependencies.authVerifier),
     validateAvailabilityQuery,
     async (_req, res) => {
-      const query = res.locals.availabilityQuery as
-        | { date: string; month?: undefined }
-        | { date?: undefined; month: string }
+      const query = res.locals.availabilityQuery as AvailabilityQuery
       const result = await dependencies.getAvailability({
         ...query,
         auth: res.locals.auth

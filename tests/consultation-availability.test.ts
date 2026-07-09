@@ -110,8 +110,9 @@ test('availability service returns all days in a requested month', async () => {
     now: () => new Date('2099-06-01T00:00:00.000Z')
   })
 
-  const result = await availability({ month: '2099-07', auth }) as typeof monthResult
+  const result = await availability({ month: '2099-07', auth })
 
+  assert.ok('days' in result)
   assert.equal(result.month, '2099-07')
   assert.equal(result.startDate, '2099-07-01')
   assert.equal(result.endDate, '2099-07-31')
@@ -119,6 +120,36 @@ test('availability service returns all days in a requested month', async () => {
   assert.deepEqual(result.days.slice(0, 2), monthResult.days)
   assert.deepEqual(result.days.at(-1), {
     date: '2099-07-31',
+    slots: [
+      { timeSlot: 'am' as const, available: true },
+      { timeSlot: 'pm' as const, available: true }
+    ]
+  })
+})
+
+test('availability service marks past days unavailable in the current month', async () => {
+  const availability = createConsultationAvailabilityService({
+    consultations: {
+      findOccupiedSlots: async () => {
+        throw new Error('Single-day lookup is outside this test.')
+      },
+      findOccupiedSlotsInRange: async () => []
+    },
+    now: () => new Date('2099-07-09T00:00:00.000Z')
+  })
+
+  const result = await availability({ month: '2099-07', auth })
+
+  assert.ok('days' in result)
+  assert.deepEqual(result.days[0], {
+    date: '2099-07-01',
+    slots: [
+      { timeSlot: 'am' as const, available: false },
+      { timeSlot: 'pm' as const, available: false }
+    ]
+  })
+  assert.deepEqual(result.days[8], {
+    date: '2099-07-09',
     slots: [
       { timeSlot: 'am' as const, available: true },
       { timeSlot: 'pm' as const, available: true }
@@ -283,6 +314,11 @@ test('availability route enforces auth, date validation, and does not shadow boo
     assert.equal((await getAvailabilityByQuery('')).status, 400)
     assert.equal(
       (await getAvailabilityByQuery('date=2099-07-01&month=2099-07')).status,
+      400
+    )
+    assert.equal(
+      (await getAvailabilityByQuery('month=2099-07&startDate=2099-07-01'))
+        .status,
       400
     )
 

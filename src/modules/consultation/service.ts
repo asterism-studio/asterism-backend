@@ -68,6 +68,18 @@ const slotUnavailable = () =>
 
 const toDateOnly = (date: Date): string => date.toISOString().slice(0, 10)
 
+const toTaipeiDateOnly = (date: Date): string => {
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone: 'Asia/Taipei',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit'
+  }).formatToParts(date)
+  const values = Object.fromEntries(parts.map((part) => [part.type, part.value]))
+
+  return `${values.year}-${values.month}-${values.day}`
+}
+
 const getMonthRange = (month: string) => {
   const [year, monthNumber] = month.split('-').map(Number)
   const startDate = `${month}-01`
@@ -78,12 +90,13 @@ const getMonthRange = (month: string) => {
 
 const buildDayAvailability = (
   date: string,
-  occupied: Set<string>
+  occupied: Set<string>,
+  today: string
 ): ConsultationDayAvailability => ({
   date,
   slots: (['am', 'pm'] as const).map((timeSlot) => ({
     timeSlot,
-    available: !occupied.has(`${date}:${timeSlot}`)
+    available: date >= today && !occupied.has(`${date}:${timeSlot}`)
   }))
 })
 
@@ -267,6 +280,9 @@ export const createConsultationAvailabilityService = (dependencies: {
     request: ConsultationAvailabilityRequest
   ): Promise<ConsultationAvailabilityResult> => {
     // Availability is authenticated at route level. Auth stays on the request for user-specific rules.
+    const now = dependencies.now()
+    const today = toTaipeiDateOnly(now)
+
     if ('month' in request) {
       const { startDate, endDate } = getMonthRange(request.month)
       const occupied = new Set(
@@ -274,7 +290,7 @@ export const createConsultationAvailabilityService = (dependencies: {
           await dependencies.consultations.findOccupiedSlotsInRange(
             startDate,
             endDate,
-            dependencies.now()
+            now
           )
         ).map(({ date, timeSlot }) => `${date}:${timeSlot}`)
       )
@@ -284,7 +300,7 @@ export const createConsultationAvailabilityService = (dependencies: {
         startDate,
         endDate,
         days: buildMonthDates(startDate, endDate).map((date) =>
-          buildDayAvailability(date, occupied)
+          buildDayAvailability(date, occupied, today)
         )
       }
     }
@@ -292,10 +308,10 @@ export const createConsultationAvailabilityService = (dependencies: {
     const occupied = new Set(
       (await dependencies.consultations.findOccupiedSlots(
         request.date,
-        dependencies.now()
+        now
       )).map((timeSlot) => `${request.date}:${timeSlot}`)
     )
 
-    return buildDayAvailability(request.date, occupied)
+    return buildDayAvailability(request.date, occupied, today)
   }
 }
