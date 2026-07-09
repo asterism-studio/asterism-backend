@@ -125,6 +125,8 @@ export function buildGatePrompt(styleGroup: string, medium: string): string {
   return `${MEDIUM_GATE_PHRASES[medium]} ${STYLE_GROUP_GATE_DESCRIPTIONS[styleGroup]}`;
 }
 
-// 低於此 cosine 不入庫。佔位值，由 scripts/calibrateRelevanceGate.ts 的分佈定案後更新。
-// 改 gate prompt 要重跑校準（門檻與 prompt 綁定）。
-export const RELEVANCE_THRESHOLD = 0.2;
+// 低於此 cosine 不入庫。2026-07-09 校準（100 張離題負樣本 vs 乾淨圖庫）:
+// 0.22 保留 97.7% 合法圖、擋掉 ≥57% 離題圖（貓狗風景等；負樣本取 36 prompt max 為保守下限，
+// crawl 時每張只比單一 prompt，實際擋掉率更高）。依「誤殺比漏放貴」（gate 後仍有人工審）取保守值。
+// 改 gate prompt 要重跑 calibrate:gate（門檻與 prompt 綁定）。
+export const RELEVANCE_THRESHOLD = 0.22;
