@@ -86,3 +86,45 @@ export const THRESHOLDS = {
 } as const;
 
 export const STYLE_TOP_K = 4;
+
+// ── Relevance gate（抓圖相關性把關）────────────────────────────
+// 抓圖仍用關鍵字 query 搜圖庫 API（那邊是關鍵字比對）；gate 另外用句子式 prompt
+// 算 CLIP cosine —— CLIP 吃自然語言，句子比關鍵字堆疊穩。
+// 描述寫「完整但寬」：gate 只刷掉不相關的圖，美學判斷留給 classify 層，
+// 塞太多具體形容詞會誤殺長相不同但合法的圖。
+export const STYLE_GROUP_GATE_DESCRIPTIONS: Record<string, string> = {
+  'Future Tech & Digital Psychedelia':
+    'a futuristic cyberpunk scene with neon lights, digital glitch effects and a high-tech atmosphere',
+  'Y2K & Internet Aesthetics':
+    'a Y2K style visual with glossy chrome, bubbly shapes and early-2000s internet aesthetics',
+  'Decorative & Opulent Art':
+    'an ornate and luxurious scene with baroque or art deco decoration, gilded details and grand classical elegance',
+  'Minimal & Structured Modern':
+    'a minimal and structured modern scene with clean lines, neutral tones and quiet refined simplicity',
+  'Earth & Organic Humanism':
+    'a calm organic scene with natural materials, earthy tones and a wabi-sabi or japandi feeling',
+  'Romantic & Pastoral Living':
+    'a romantic and pastoral scene with a cozy, vintage countryside atmosphere',
+  'Retro & Nostalgia':
+    'a retro nostalgic scene with vintage mid-century style and old-fashioned charm',
+  'Experimental & Avant-Garde':
+    'an experimental avant-garde work with brutalist, deconstructed or unconventional design',
+  'Street & Youth Culture':
+    'a streetwear and urban youth culture scene with graffiti, skate or hypebeast style'
+};
+
+export const MEDIUM_GATE_PHRASES: Record<string, string> = {
+  Outfit: 'a fashion photo of',
+  'Graphic Design': 'a graphic design work of',
+  'Interior Design': 'an interior design photo of',
+  Architecture: 'an architecture photo of'
+};
+
+// 搜尋 query 走關鍵字，gate 走句子——兩者拆開，各司其職（見上方註解）。
+export function buildGatePrompt(styleGroup: string, medium: string): string {
+  return `${MEDIUM_GATE_PHRASES[medium]} ${STYLE_GROUP_GATE_DESCRIPTIONS[styleGroup]}`;
+}
+
+// 低於此 cosine 不入庫。佔位值，由 scripts/calibrateRelevanceGate.ts 的分佈定案後更新。
+// 改 gate prompt 要重跑校準（門檻與 prompt 綁定）。
+export const RELEVANCE_THRESHOLD = 0.2;
