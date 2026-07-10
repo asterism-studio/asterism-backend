@@ -79,6 +79,25 @@ export const createConsultationRepository = (
     return bookings.map((booking) => booking.timeSlot)
   },
 
+  findOccupiedSlotsInRange: async (startDate, endDate, now) => {
+    const bookings = await database.consultationBooking.findMany({
+      where: {
+        consultationDate: {
+          gte: toDatabaseDate(startDate),
+          lte: toDatabaseDate(endDate)
+        },
+        ...occupiedSlotWhere(now)
+      },
+      select: { consultationDate: true, timeSlot: true },
+      distinct: ['consultationDate', 'timeSlot']
+    })
+
+    return bookings.map((booking) => ({
+      date: toDateOnly(booking.consultationDate),
+      timeSlot: booking.timeSlot
+    }))
+  },
+
   findDetails: async (bookingId) => {
     const booking = await database.consultationBooking.findUnique({
       where: { id: bookingId },

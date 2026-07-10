@@ -79,7 +79,7 @@ stripePaymentIntentId
 | `POST /api/v1/payments/stripe/webhook` | 必做 | Stripe signature | 接收 Stripe event 並同步付款狀態 |
 | `GET /api/v1/consultations/:bookingId` | 必做 | Required | 查詢單一預約與付款狀態 |
 | `GET /api/v1/consultations/me` | 建議 | Required | 查詢自己的預約紀錄 |
-| `GET /api/v1/consultations/availability` | 建議 | Required | 查詢指定日期可預約時段 |
+| `GET /api/v1/consultations/availability` | 建議 | Required | 查詢指定日期或月份的可預約時段 |
 | `GET /api/v1/consultants/match` | 視前端流程 | Required | 查詢前端顯示用媒合顧問 |
 | `GET /api/v1/consultants` | 可選 | Optional / Required | 顯示 active consultants 公開資料 |
 | `POST /api/v1/consultations/:bookingId/cancel` | 後續 | Required | 取消尚未付款或尚未完成的預約 |
@@ -428,7 +428,7 @@ profileId = currentAuthProfile.id
 
 ### 用途
 
-查詢指定日期的可預約時段，提供前端表單選擇 UX。
+查詢指定日期或整個月份的可預約時段，提供前端表單與月曆選擇 UX。
 
 ### Auth
 
@@ -440,7 +440,20 @@ profileId = currentAuthProfile.id
 date=YYYY-MM-DD
 ```
 
+或：
+
+```txt
+month=YYYY-MM
+```
+
+- `date` 與 `month` 二擇一，不可同時傳。
+- `date` 用於單日查詢，保留既有設計。
+- `month` 用於整月查詢，後端依 `YYYY-MM` 自行計算該月第一天與最後一天，不要求前端處理大小月或閏年。
+- `month` 必須是有效月份，例如 `2026-07`；`2026-13` 應回傳 `400 VALIDATION_ERROR`。
+
 ### Response
+
+單日查詢：
 
 ```ts
 {
@@ -462,11 +475,52 @@ date=YYYY-MM-DD
 }
 ```
 
+整月查詢：
+
+```ts
+{
+  success: true,
+  data: {
+    month: '2026-07'
+    startDate: '2026-07-01'
+    endDate: '2026-07-31'
+    days: [
+      {
+        date: '2026-07-01'
+        slots: [
+          {
+            timeSlot: 'am'
+            available: true
+          },
+          {
+            timeSlot: 'pm'
+            available: false
+          }
+        ]
+      }
+    ]
+  },
+  error: null
+}
+```
+
 ### 注意事項
 
 - availability API 只作為 UX 提示。
 - checkout API 仍必須再次檢查可用性。
 - DB partial unique index 仍是避免 double-booking 的最後防線。
+- 整月查詢應補齊該月所有日期；即使某天沒有已佔用時段，也應回傳該日的 `am` / `pm` 狀態。
+- 整月查詢不新增 `startDate` / `endDate` 自訂區間，避免前端承擔大小月計算與不必要的查詢彈性。
+
+### 必要測試
+
+- `date=2026-07-01` 保留既有單日 response shape。
+- `month=2026-07` 回傳 `2026-07-01` 到 `2026-07-31`。
+- `month=2026-04` 回傳 `2026-04-01` 到 `2026-04-30`。
+- `month=2028-02` 回傳 `2028-02-01` 到 `2028-02-29`。
+- `month=2027-02` 回傳 `2027-02-01` 到 `2027-02-28`。
+- `date` 與 `month` 同時傳應回傳 `400 VALIDATION_ERROR`。
+- 未傳 `date` / `month`、無效日期、無效月份都應回傳 `400 VALIDATION_ERROR`。
 
 ---
 

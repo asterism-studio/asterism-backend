@@ -5,6 +5,7 @@ import type {
   CheckoutDependencies,
   CheckoutRequest,
   CheckoutResult,
+  ConsultationDayAvailability,
   ConsultationAvailabilityRequest,
   ConsultationAvailabilityResult,
   ConsultationDetailsRequest,
@@ -64,6 +65,53 @@ const slotUnavailable = () =>
     'SLOT_UNAVAILABLE',
     'The consultation slot is unavailable.'
   )
+
+const toDateOnly = (date: Date): string => date.toISOString().slice(0, 10)
+
+const toTaipeiDateOnly = (date: Date): string => {
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone: 'Asia/Taipei',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit'
+  }).formatToParts(date)
+  const values = Object.fromEntries(parts.map((part) => [part.type, part.value]))
+
+  return `${values.year}-${values.month}-${values.day}`
+}
+
+const getMonthRange = (month: string) => {
+  const [year, monthNumber] = month.split('-').map(Number)
+  const startDate = `${month}-01`
+  const endDate = toDateOnly(new Date(Date.UTC(year, monthNumber, 0)))
+
+  return { startDate, endDate }
+}
+
+const buildDayAvailability = (
+  date: string,
+  occupied: Set<string>,
+  today: string
+): ConsultationDayAvailability => ({
+  date,
+  slots: (['am', 'pm'] as const).map((timeSlot) => ({
+    timeSlot,
+    available: date >= today && !occupied.has(`${date}:${timeSlot}`)
+  }))
+})
+
+const buildMonthDates = (startDate: string, endDate: string): string[] => {
+  const dates: string[] = []
+  const current = new Date(`${startDate}T00:00:00.000Z`)
+  const end = new Date(`${endDate}T00:00:00.000Z`)
+
+  while (current <= end) {
+    dates.push(toDateOnly(current))
+    current.setUTCDate(current.getUTCDate() + 1)
+  }
+
+  return dates
+}
 
 export const createConsultationCheckoutService = (
   dependencies: CheckoutDependencies
@@ -222,26 +270,48 @@ export const createConsultationQueryService = (
 }
 
 export const createConsultationAvailabilityService = (dependencies: {
-  consultations: Pick<ConsultationRepository, 'findOccupiedSlots'>
+  consultations: Pick<
+    ConsultationRepository,
+    'findOccupiedSlots' | 'findOccupiedSlotsInRange'
+  >
   now(): Date
 }) => {
   return async (
     request: ConsultationAvailabilityRequest
   ): Promise<ConsultationAvailabilityResult> => {
     // Availability is authenticated at route level. Auth stays on the request for user-specific rules.
-    const occupied = new Set(
-      await dependencies.consultations.findOccupiedSlots(
-        request.date,
-        dependencies.now()
+    const now = dependencies.now()
+    const today = toTaipeiDateOnly(now)
+
+    if ('month' in request) {
+      const { startDate, endDate } = getMonthRange(request.month)
+      const occupied = new Set(
+        (
+          await dependencies.consultations.findOccupiedSlotsInRange(
+            startDate,
+            endDate,
+            now
+          )
+        ).map(({ date, timeSlot }) => `${date}:${timeSlot}`)
       )
+
+      return {
+        month: request.month,
+        startDate,
+        endDate,
+        days: buildMonthDates(startDate, endDate).map((date) =>
+          buildDayAvailability(date, occupied, today)
+        )
+      }
+    }
+
+    const occupied = new Set(
+      (await dependencies.consultations.findOccupiedSlots(
+        request.date,
+        now
+      )).map((timeSlot) => `${request.date}:${timeSlot}`)
     )
 
-    return {
-      date: request.date,
-      slots: (['am', 'pm'] as const).map((timeSlot) => ({
-        timeSlot,
-        available: !occupied.has(timeSlot)
-      }))
-    }
+    return buildDayAvailability(request.date, occupied, today)
   }
 }

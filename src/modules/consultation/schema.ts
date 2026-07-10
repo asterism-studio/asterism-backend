@@ -1,6 +1,7 @@
 import { z } from 'zod'
 
 const DATE_ONLY_PATTERN = /^\d{4}-\d{2}-\d{2}$/
+const MONTH_ONLY_PATTERN = /^\d{4}-\d{2}$/
 
 const isValidDateOnly = (value: string): boolean => {
   if (!DATE_ONLY_PATTERN.test(value)) {
@@ -29,12 +30,30 @@ const getTaipeiDate = (): string => {
   return `${values.year}-${values.month}-${values.day}`
 }
 
+const getTaipeiMonth = (): string => getTaipeiDate().slice(0, 7)
+
 const dateOnlySchema = (fieldName: string) => z
   .string()
   .refine(isValidDateOnly, `${fieldName} must be a valid YYYY-MM-DD.`)
   .refine(
     (value) => value >= getTaipeiDate(),
     `${fieldName} cannot be in the past.`
+  )
+
+const monthOnlySchema = z
+  .string()
+  .refine((value) => {
+    if (!MONTH_ONLY_PATTERN.test(value)) {
+      return false
+    }
+
+    const [year, month] = value.split('-').map(Number)
+
+    return month >= 1 && month <= 12 && year >= 1
+  }, 'month must be a valid YYYY-MM.')
+  .refine(
+    (value) => value >= getTaipeiMonth(),
+    'month cannot be in the past.'
   )
 
 const optionalTrimmedString = z
@@ -68,4 +87,19 @@ export const createCheckoutSchema = z
 export const idempotencyKeySchema = z.uuid()
 export const bookingIdSchema = z.uuid()
 export const availabilityDateSchema = dateOnlySchema('date')
+export const availabilityQuerySchema = z.union([
+  z
+    .object({
+      date: availabilityDateSchema,
+      month: z.undefined().optional()
+    })
+    .strict(),
+  z
+    .object({
+      date: z.undefined().optional(),
+      month: monthOnlySchema
+    })
+    .strict()
+])
 
+export type AvailabilityQuery = z.infer<typeof availabilityQuerySchema>
