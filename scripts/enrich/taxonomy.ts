@@ -122,7 +122,11 @@ export const MEDIUM_GATE_PHRASES: Record<string, string> = {
 
 // 搜尋 query 走關鍵字，gate 走句子——兩者拆開，各司其職（見上方註解）。
 export function buildGatePrompt(styleGroup: string, medium: string): string {
-  return `${MEDIUM_GATE_PHRASES[medium]} ${STYLE_GROUP_GATE_DESCRIPTIONS[styleGroup]}`;
+  const description = STYLE_GROUP_GATE_DESCRIPTIONS[styleGroup];
+  const phrase = MEDIUM_GATE_PHRASES[medium];
+  if (!description) throw new Error(`未知的 styleGroup: ${styleGroup}`);
+  if (!phrase) throw new Error(`未知的 medium: ${medium}`);
+  return `${phrase} ${description}`;
 }
 
 // 低於此 cosine 不入庫。2026-07-09 校準（100 張離題負樣本 vs 乾淨圖庫）:

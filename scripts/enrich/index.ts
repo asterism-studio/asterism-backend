@@ -23,17 +23,25 @@ const IMAGES_PER_SOURCE = 5; // 5 Pexels + 5 Unsplash = 10 張/組合；9 styleG
 // 想抓下一波（避免重複拿到同一批）就用 ENRICH_PAGE=2、3… 換頁；預設第 1 頁。
 const PAGE = Math.max(1, Number(process.env.ENRICH_PAGE) || 1);
 
+// off：完全不算 embedding（省效能，抓圖先衝量時用）；dry-run：算但只記 log 不刷掉（預設）；
+// enforce：低於門檻真的不入庫。
+type GateMode = 'off' | 'dry-run' | 'enforce';
+const GATE_MODE: GateMode =
+  process.env.GATE_MODE === 'off' || process.env.GATE_MODE === 'enforce'
+    ? process.env.GATE_MODE
+    : 'dry-run';
+
 async function main(): Promise<void> {
   const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 
   // try/finally 確保中途拋錯時 pool 仍會關閉，避免連線洩漏。
   try {
     const scorer = await createClipScorer();
-    const embedder = await createClipEmbedder();
-    const textEmbedder = await createClipTextEmbedder();
-    // gate：預設 dry-run 只記 log；GATE_ENFORCE=1 才真的把低分圖刷掉不入庫。
-    const gateEnforced = process.env.GATE_ENFORCE === '1';
-    let gateRejected = 0;
+    // GATE_MODE=off 時完全不載入 CLIP embedding 模型，省下模型初始化與逐張推論的時間。
+    const embedder = GATE_MODE === 'off' ? null : await createClipEmbedder();
+    const textEmbedder = GATE_MODE === 'off' ? null : await createClipTextEmbedder();
+    let gateFlagged = 0; // 算出來低於門檻的張數（不論是否真的刷掉）
+    let gateRejected = 0; // 實際被刷掉、沒入庫的張數（僅 enforce 模式會 > 0）
     const allRows: ImageRow[] = [];
     let skipped = 0;
     let totalInserted = 0;
@@ -44,8 +52,11 @@ async function main(): Promise<void> {
       for (const medium of MEDIUM_LABELS) {
         const query = `${anchorPrompt} ${medium}`;
         // gate prompt 與搜尋 query 拆開：搜尋走關鍵字，gate 走自然語言句（見 taxonomy.ts）。
-        const gatePrompt = buildGatePrompt(styleGroup, medium);
-        const [gateVector] = await textEmbedder.embedTexts([gatePrompt]);
+        // GATE_MODE=off 不算 gate，省下這次文字 embedding。
+        const gateVector =
+          GATE_MODE === 'off'
+            ? null
+            : (await textEmbedder!.embedTexts([buildGatePrompt(styleGroup, medium)]))[0];
         // allSettled：單一來源（Pexels/Unsplash）整批失敗（如 rate limit / 網路）只略過該來源，
         // 不讓整個 main() throw，後續 styleGroup / medium 仍會繼續跑。
         const [pexelsSettled, unsplashSettled] = await Promise.allSettled([
@@ -67,15 +78,18 @@ async function main(): Promise<void> {
           try {
             // gate：先算圖片 embedding 對 gate prompt 的 cosine，低於門檻視為不相關。
             // 只算來比對、不入庫（本管線不存 embedding），過門檻才跑 classify/palette。
-            const embedding = await embedder.embedImage(meta.url);
-            const relevance = dot(embedding, gateVector);
-            if (relevance < RELEVANCE_THRESHOLD) {
-              console.log(
-                `[gate${gateEnforced ? '' : ' dry-run'}][${styleGroup} / ${medium}] ${meta.url} relevance=${relevance.toFixed(3)}`
-              );
-              if (gateEnforced) {
-                gateRejected += 1;
-                continue;
+            if (GATE_MODE !== 'off') {
+              const embedding = await embedder!.embedImage(meta.url);
+              const relevance = dot(embedding, gateVector!);
+              if (relevance < RELEVANCE_THRESHOLD) {
+                gateFlagged += 1;
+                console.log(
+                  `[gate ${GATE_MODE}][${styleGroup} / ${medium}] ${meta.url} relevance=${relevance.toFixed(3)}`
+                );
+                if (GATE_MODE === 'enforce') {
+                  gateRejected += 1;
+                  continue;
+                }
               }
             }
             const classification = await classifyImage(scorer, meta.url);
@@ -120,7 +134,8 @@ async function main(): Promise<void> {
     console.log('分類分佈（styleGroup × medium）：', groupMediumDistribution);
     // allRows.length 是候選總數；totalInserted 才是這次實際新增（其餘為重跑撞 id 略過）。
     console.log(
-      `第 ${PAGE} 頁 候選總數：${allRows.length}，實際入庫 ${totalInserted} 張，略過 ${skipped} 張，gate 刷掉 ${gateRejected} 張，needsReview ${needsReviewCount} 筆`
+      `第 ${PAGE} 頁 候選總數：${allRows.length}，實際入庫 ${totalInserted} 張，略過 ${skipped} 張，` +
+        `gate 標記 ${gateFlagged} 張／實際刷掉 ${gateRejected} 張（GATE_MODE=${GATE_MODE}），needsReview ${needsReviewCount} 筆`
     );
   } finally {
     await pool.end();

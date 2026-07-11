@@ -10,6 +10,8 @@ async function main(): Promise<void> {
   assert.equal(dot([1, 0], [1, 0]), 1);
   assert.equal(dot([1, 0], [0, 1]), 0);
   assert.ok(Math.abs(dot([0.6, 0.8], [0.8, 0.6]) - 0.96) < 1e-9);
+  // dot：維度不一致要噴錯，不能默默算出錯的數字
+  assert.throws(() => dot([1, 0], [1, 0, 0]));
 
   // gate prompt：9 個 styleGroup × 4 個 medium 都組得出完整句子（無缺素材）
   for (const styleGroup of Object.keys(STYLE_GROUP_ANCHORS)) {
@@ -19,6 +21,9 @@ async function main(): Promise<void> {
       assert.ok(!prompt.includes('undefined'), `gate prompt 缺素材: ${styleGroup} × ${medium}`);
     }
   }
+  // buildGatePrompt：未知的 styleGroup/medium 要噴錯，不能組出含 undefined 的句子
+  assert.throws(() => buildGatePrompt('不存在的風格', MEDIUM_LABELS[0]));
+  assert.throws(() => buildGatePrompt(Object.keys(STYLE_GROUP_ANCHORS)[0], '不存在的媒材'));
 
   console.log('gate selfcheck OK');
 }
