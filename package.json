@@ -14,7 +14,8 @@
     "db:migrate": "prisma migrate dev",
     "enrich:images": "tsx scripts/enrich/index.ts",
     "reclassify:submedium": "tsx scripts/reclassifySubMedium.ts",
-    "recompute:needs-review": "tsx scripts/recomputeNeedsReview.ts"
+    "recompute:needs-review": "tsx scripts/recomputeNeedsReview.ts",
+    "selfcheck:enrich": "tsx scripts/enrich/selfcheck.ts"
   },
   "keywords": [],
   "author": "",
