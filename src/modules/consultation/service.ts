@@ -1,4 +1,8 @@
 import { AppError } from '../../middleware/errorHandler.js'
+import {
+  decodeConsultationListCursor,
+  encodeConsultationListCursor
+} from './pagination.js'
 import type {
   BookingRecord,
   CheckoutCommand,
@@ -8,8 +12,13 @@ import type {
   ConsultationDayAvailability,
   ConsultationAvailabilityRequest,
   ConsultationAvailabilityResult,
+  ConsultationListRequest,
+  ConsultationListCursor,
   ConsultationDetailsRequest,
   ConsultationDetailsResult,
+  MyConsultationListItem,
+  MyConsultationListRecord,
+  MyConsultationListResult,
   ConsultationRepository
 } from './types.js'
 
@@ -67,6 +76,14 @@ const slotUnavailable = () =>
   )
 
 const toDateOnly = (date: Date): string => date.toISOString().slice(0, 10)
+
+const optionalText = (value: string | null): string | undefined => {
+  if (!value || value.trim().length === 0) {
+    return undefined
+  }
+
+  return value
+}
 
 const toTaipeiDateOnly = (date: Date): string => {
   const parts = new Intl.DateTimeFormat('en-US', {
@@ -265,6 +282,92 @@ export const createConsultationQueryService = (
             avatarUrl: details.consultant.avatarUrl ?? undefined
           }
         : undefined
+    }
+  }
+}
+
+const toConsultationListItem = (
+  record: MyConsultationListRecord
+): MyConsultationListItem => ({
+  id: record.id,
+  status: record.status,
+  method: record.method,
+  consultationDate: record.consultationDate,
+  timeSlot: record.timeSlot,
+  ...(optionalText(record.designField)
+    ? { designField: optionalText(record.designField) }
+    : {}),
+  ...(optionalText(record.designFocus)
+    ? { designFocus: optionalText(record.designFocus) }
+    : {}),
+  ...(optionalText(record.notes) ? { notes: optionalText(record.notes) } : {}),
+  ...(record.consultant
+    ? {
+        consultant: {
+          displayName: record.consultant.displayName,
+          title: record.consultant.title,
+          ...(optionalText(record.consultant.avatarUrl)
+            ? { avatarUrl: optionalText(record.consultant.avatarUrl) }
+            : {})
+        }
+      }
+    : {}),
+  createdAt: record.createdAt.toISOString()
+})
+
+export const createConsultationListService = (
+  consultations: Pick<
+    ConsultationRepository,
+    'findProfile' | 'findMyBookings'
+  >
+) => {
+  return async (
+    request: ConsultationListRequest
+  ): Promise<MyConsultationListResult> => {
+    const profile = await consultations.findProfile(request.auth.userId)
+
+    if (!profile) {
+      throw new AppError(
+        404,
+        'PROFILE_NOT_FOUND',
+        'The authenticated profile was not found.'
+      )
+    }
+
+    const cursor = request.query.cursor
+      ? decodeConsultationListCursor(
+          request.query.cursor,
+          request.query.status
+        )
+      : undefined
+    const records = await consultations.findMyBookings({
+      profileId: profile.id,
+      status: request.query.status,
+      limit: request.query.limit,
+      cursor
+    })
+    const hasNextPage = records.length > request.query.limit
+    const visibleRecords = hasNextPage
+      ? records.slice(0, request.query.limit)
+      : records
+    const items = visibleRecords.map(toConsultationListItem)
+    const lastRecord = visibleRecords.at(-1)
+
+    if (!hasNextPage || !lastRecord) {
+      return { items }
+    }
+
+    const nextCursor: ConsultationListCursor = {
+      version: 1,
+      status: request.query.status,
+      consultationDate: lastRecord.consultationDate,
+      timeSlot: lastRecord.timeSlot,
+      id: lastRecord.id
+    }
+
+    return {
+      items,
+      nextCursor: encodeConsultationListCursor(nextCursor)
     }
   }
 }

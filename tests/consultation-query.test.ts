@@ -156,6 +156,7 @@ const createQueryHttpApp = () => {
     getAvailability: async () => {
       throw new Error('Availability is outside this test.')
     },
+    getMyConsultations: async () => ({ items: [] }),
     getBooking: async () => expectedResult,
     rateLimit: {
       windowMs: 60_000,

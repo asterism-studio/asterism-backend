@@ -13,6 +13,7 @@ import { createConsultationRouter } from './modules/consultation/routes.js'
 import {
   createConsultationAvailabilityService,
   createConsultationCheckoutService,
+  createConsultationListService,
   createConsultationQueryService
 } from './modules/consultation/service.js'
 import {
@@ -71,6 +72,7 @@ const consultationRouter = createConsultationRouter({
     consultations: consultationRepository,
     now: () => new Date()
   }),
+  getMyConsultations: createConsultationListService(consultationRepository),
   getBooking: createConsultationQueryService(consultationRepository),
   rateLimit: {
     windowMs: 10 * 60 * 1000,
