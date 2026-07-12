@@ -6,7 +6,7 @@ import test from 'node:test'
 test('consultation migration creates the schema and locks it down with RLS', async () => {
   const migrationsDirectory = path.resolve('prisma/migrations')
   const entries = await readdir(migrationsDirectory)
-  const migrationDirectory = entries.find((entry) =>
+  const migrationDirectory = entries.find((entry: string) =>
     entry.endsWith('_add_consultation_schema_and_rls')
   )
 
@@ -55,7 +55,7 @@ test('consultation migration creates the schema and locks it down with RLS', asy
 test('checkout stability migration separates idempotency and permits payment drafts', async () => {
   const migrationsDirectory = path.resolve('prisma/migrations')
   const entries = await readdir(migrationsDirectory)
-  const migrationDirectory = entries.find((entry) =>
+  const migrationDirectory = entries.find((entry: string) =>
     entry.endsWith('_stabilize_consultation_checkout')
   )
 
@@ -78,5 +78,26 @@ test('checkout stability migration separates idempotency and permits payment dra
   assert.match(
     sql,
     /CREATE UNIQUE INDEX "consultation_bookings_slot_unique"\s+ON "consultation_bookings"\("consultation_date", "time_slot"\)\s+WHERE "status" IN \('pending_payment', 'confirmed', 'completed'\);/
+  )
+})
+
+test('consultation list migration replaces the profile index with the ordered owner index', async () => {
+  const migrationsDirectory = path.resolve('prisma/migrations')
+  const entries = await readdir(migrationsDirectory)
+  const migrationDirectory = entries.find((entry: string) =>
+    entry.endsWith('_add_consultation_list_index')
+  )
+
+  assert.ok(migrationDirectory, 'consultation list index migration is missing')
+
+  const sql = await readFile(
+    path.join(migrationsDirectory, migrationDirectory, 'migration.sql'),
+    'utf8'
+  )
+
+  assert.match(sql, /DROP INDEX "consultation_bookings_profile_id_idx";/)
+  assert.match(
+    sql,
+    /CREATE INDEX "consultation_bookings_profile_date_slot_id_idx"\s+ON "consultation_bookings"\("profile_id", "consultation_date", "time_slot", "id"\);/
   )
 })

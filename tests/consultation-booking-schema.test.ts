@@ -8,9 +8,9 @@ const migrationsDirectory = path.resolve('prisma/migrations')
 
 const readPrismaSchema = async () => {
   const entries = await readdir(prismaDirectory)
-  const schemaFiles = entries.filter((entry) => entry.endsWith('.prisma'))
+  const schemaFiles = entries.filter((entry: string) => entry.endsWith('.prisma'))
   const contents = await Promise.all(
-    schemaFiles.map((entry) =>
+    schemaFiles.map((entry: string) =>
       readFile(path.join(prismaDirectory, entry), 'utf8')
     )
   )
@@ -20,11 +20,11 @@ const readPrismaSchema = async () => {
 
 const readMigrationSql = async () => {
   const entries = await readdir(migrationsDirectory, { recursive: true })
-  const sqlFiles = entries.filter((entry) =>
+  const sqlFiles = entries.filter((entry: string) =>
     String(entry).endsWith('migration.sql')
   )
   const contents = await Promise.all(
-    sqlFiles.map((entry) =>
+    sqlFiles.map((entry: string) =>
       readFile(path.join(migrationsDirectory, String(entry)), 'utf8')
     )
   )
@@ -81,7 +81,10 @@ test('Prisma schema defines the consultation booking contract', async () => {
     /sourceImage\s+Image\?\s+@relation\(fields: \[sourceImageId\], references: \[id\], onDelete: SetNull\)/
   )
   assert.match(schema, /@@unique\(\[profileId, idempotencyKey\]\)/)
-  assert.doesNotMatch(schema, /@@index\(\[consultationDate, timeSlot\]\)/)
+  assert.match(
+    schema,
+    /@@index\(\[profileId, consultationDate, timeSlot, id\], map: "consultation_bookings_profile_date_slot_id_idx"\)/
+  )
 })
 
 test('Migration SQL adds the active consultation booking slot lock', async () => {

@@ -53,7 +53,7 @@ model ConsultationBooking {
   sourceImage Image?               @relation(fields: [sourceImageId], references: [id], onDelete: SetNull)
   payment     ConsultationPayment?
 
-  @@index([profileId])
+  @@index([profileId, consultationDate, timeSlot, id], map: "consultation_bookings_profile_date_slot_id_idx")
   @@index([consultantId])
   @@index([sourceImageId])
   @@unique([profileId, idempotencyKey])
