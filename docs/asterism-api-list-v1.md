@@ -1,6 +1,6 @@
 # 顧問預約與金流 API Contract
 
-> 更新日期：2026-07-02  
+> 更新日期：2026-07-12
 > 狀態：Planned  
 > 版本：v1  
 > 適用範圍：顧問預約、Stripe 金流、顧問配對、預約查詢  
@@ -368,7 +368,7 @@ bookingId=<uuid>
 
 ### 用途
 
-讓登入使用者查詢自己的預約紀錄。
+讓登入使用者查詢自己的預約紀錄，供「我的預約」頁面顯示日期時間軸、預約內容與完整預約列表。
 
 ### Auth
 
@@ -386,13 +386,22 @@ limit=20
 cursor=...
 ```
 
+- `status` optional，用於篩選 booking status。
+- `limit` optional，預設 `20`，只接受 `1..50` 的整數。
+- `cursor` optional，用於 cursor-based pagination；無法解碼或欄位不合法時回傳 `400 VALIDATION_ERROR`。
+- query 使用 strict parsing；`status`、`limit`、`cursor` 以外的 query parameter 回傳 `400 VALIDATION_ERROR`。
+
 ### 後端查詢條件
 
 ```txt
 profileId = currentAuthProfile.id
 ```
 
-不接受前端傳入 `profileId` 查詢。
+- `profileId` 必須由 auth context 取得，不接受前端傳入。
+- 預設依 `consultationDate ASC`、`timeSlot ASC`、`id ASC` 排序；`id` 是相同日期與時段時的唯一 tie-breaker。
+- cursor payload 包含 `version: 1`、目前的 `status` filter、`consultationDate`、`timeSlot` 與 `id`；cursor 的 status context 與目前 query 不一致時回傳 `400 VALIDATION_ERROR`。
+- `timeSlot` 是 Prisma enum，repository 依 `am` / `pm` 明確展開 seek condition，不假設 enum 支援 `gt` / `lt` filter。
+- 列表 endpoint 只回傳頁面需要的摘要欄位，不直接沿用單筆詳情 `ConsultationBookingDetail`。
 
 ### Response
 
@@ -403,17 +412,24 @@ profileId = currentAuthProfile.id
     items: [
       {
         id: string
-        method: string
-        consultationDate: string
-        timeSlot: string
-        bookingStatus: string
-        paymentStatus: string
+        status:
+          | 'pending_payment'
+          | 'confirmed'
+          | 'payment_failed'
+          | 'canceled'
+          | 'completed'
+        method: 'online' | 'in_person'
+        consultationDate: string // YYYY-MM-DD
+        timeSlot: 'am' | 'pm'
+        designField?: string
+        designFocus?: string
+        notes?: string
         consultant?: {
           displayName: string
           title: string
           avatarUrl?: string
         }
-        createdAt: string
+        createdAt: string // ISO 8601 datetime
       }
     ]
     nextCursor?: string
@@ -421,6 +437,40 @@ profileId = currentAuthProfile.id
   error: null
 }
 ```
+
+### 欄位說明
+
+| 欄位 | 說明 |
+|---|---|
+| `id` | Booking ID。 |
+| `status` | 預約狀態，由後端 consultation service 維護。 |
+| `method` | 後端標準值，只回傳 `online` / `in_person`；前端負責轉成顯示文字。 |
+| `consultationDate` | 預約日期，格式為 `YYYY-MM-DD`。 |
+| `timeSlot` | 預約時段，只回傳 `am` / `pm`。 |
+| `designField` | 設計領域；若 booking 未提供則省略。 |
+| `designFocus` | 設計重點；若 booking 未提供則省略。 |
+| `notes` | 使用者備註；未提供時省略。 |
+| `consultant` | 已媒合顧問摘要；尚未媒合時省略。 |
+| `createdAt` | Booking 建立時間，ISO 8601 datetime。 |
+| `nextCursor` | 下一頁 cursor；沒有下一頁時省略。 |
+
+### 常見錯誤
+
+| 狀態碼 | Code | 情境 |
+|---:|---|---|
+| `400` | `VALIDATION_ERROR` | `status`、`limit` 或 `cursor` 格式錯誤 |
+| `401` | `UNAUTHORIZED` | 未登入或 token 無效 |
+| `404` | `PROFILE_NOT_FOUND` | 找不到對應 profile |
+
+### 注意事項
+
+- `GET /api/v1/consultations/me` 使用獨立列表 DTO，不直接定義為 `ConsultationBookingDetail[]`。
+- 此 endpoint 回傳所有符合條件的預約紀錄，不預設只回傳 upcoming；前端應使用「我的預約」或「預約紀錄」等通用文案。
+- 本 issue 不新增 `upcoming`、`scope`、日期區間或過去／未來分組 query parameter。
+- `method`、`status`、`timeSlot` 回傳後端 enum 原始值，不回傳 `Online`、`In-Person` 等 UI 顯示文字。
+- Optional 欄位為 `null`、空字串或純空白時省略，不以空字串偽造資料；非空 `notes` 原始內容不由 mapper 改寫。
+- 列表需要顧問摘要時由此 API 一次回傳，不應讓前端針對每筆 booking 再呼叫 `GET /api/v1/consultations/:bookingId`。
+- `paymentStatus`、`amount`、`currency` 等付款資訊若目前列表 UI 不需要，第一版不回傳；需要時再明確擴充 contract，避免列表 response 持續膨脹。
 
 ---
 
