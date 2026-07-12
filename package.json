@@ -13,6 +13,7 @@
     "db:format": "prisma format",
     "db:migrate": "prisma migrate dev",
     "enrich:images": "tsx scripts/enrich/index.ts",
+    "calibrate:gate": "tsx scripts/calibrateRelevanceGate.ts",
     "reclassify:submedium": "tsx scripts/reclassifySubMedium.ts",
     "recompute:needs-review": "tsx scripts/recomputeNeedsReview.ts",
     "selfcheck:enrich": "tsx scripts/enrich/selfcheck.ts"

@@ -129,3 +129,51 @@ export const THRESHOLDS = {
 } as const;
 
 export const STYLE_TOP_K = 4;
+
+// ── Relevance gate（抓圖相關性把關）────────────────────────────
+// 抓圖仍用關鍵字 query 搜圖庫 API（那邊是關鍵字比對）；gate 另外用句子式 prompt
+// 算 CLIP cosine —— CLIP 吃自然語言，句子比關鍵字堆疊穩。
+// 描述寫「完整但寬」：gate 只刷掉不相關的圖，美學判斷留給 classify 層，
+// 塞太多具體形容詞會誤殺長相不同但合法的圖。
+export const STYLE_GROUP_GATE_DESCRIPTIONS: Record<string, string> = {
+  'Future Tech & Digital Psychedelia':
+    'a futuristic cyberpunk scene with neon lights, digital glitch effects and a high-tech atmosphere',
+  'Y2K & Internet Aesthetics':
+    'a Y2K style visual with glossy chrome, bubbly shapes and early-2000s internet aesthetics',
+  'Decorative & Opulent Art':
+    'an ornate and luxurious scene with baroque or art deco decoration, gilded details and grand classical elegance',
+  'Minimal & Structured Modern':
+    'a minimal and structured modern scene with clean lines, neutral tones and quiet refined simplicity',
+  'Earth & Organic Humanism':
+    'a calm organic scene with natural materials, earthy tones and a wabi-sabi or japandi feeling',
+  'Romantic & Pastoral Living':
+    'a romantic and pastoral scene with a cozy, vintage countryside atmosphere',
+  'Retro & Nostalgia':
+    'a retro nostalgic scene with vintage mid-century style and old-fashioned charm',
+  'Experimental & Avant-Garde':
+    'an experimental avant-garde work with brutalist, deconstructed or unconventional design',
+  'Street & Youth Culture':
+    'a streetwear and urban youth culture scene with graffiti, skate or hypebeast style'
+};
+
+export const MEDIUM_GATE_PHRASES: Record<string, string> = {
+  Outfit: 'a fashion photo of',
+  'Graphic Design': 'a graphic design work of',
+  'Interior Design': 'an interior design photo of',
+  Architecture: 'an architecture photo of'
+};
+
+// 搜尋 query 走關鍵字，gate 走句子——兩者拆開，各司其職（見上方註解）。
+export function buildGatePrompt(styleGroup: string, medium: string): string {
+  const description = STYLE_GROUP_GATE_DESCRIPTIONS[styleGroup];
+  const phrase = MEDIUM_GATE_PHRASES[medium];
+  if (!description) throw new Error(`未知的 styleGroup: ${styleGroup}`);
+  if (!phrase) throw new Error(`未知的 medium: ${medium}`);
+  return `${phrase} ${description}`;
+}
+
+// 低於此 cosine 不入庫。2026-07-09 校準（100 張離題負樣本 vs 乾淨圖庫）:
+// 0.22 保留 97.7% 合法圖、擋掉 ≥57% 離題圖（貓狗風景等；負樣本取 36 prompt max 為保守下限，
+// crawl 時每張只比單一 prompt，實際擋掉率更高）。依「誤殺比漏放貴」（gate 後仍有人工審）取保守值。
+// 改 gate prompt 要重跑 calibrate:gate（門檻與 prompt 綁定）。
+export const RELEVANCE_THRESHOLD = 0.22;
