@@ -1,7 +1,12 @@
 import type { z } from 'zod'
 
 import type { AuthContext } from '../auth/auth.types.js'
-import type { createCheckoutSchema } from './schema.js'
+import type {
+  consultationListScopeSchema,
+  consultationListQuerySchema,
+  createCheckoutSchema,
+  bookingStatusSchema
+} from './schema.js'
 
 export type CreateCheckoutInput = z.output<typeof createCheckoutSchema>
 
@@ -11,12 +16,10 @@ export interface CheckoutResult {
   checkoutUrl: string
 }
 
-export type BookingStatus =
-  | 'pending_payment'
-  | 'confirmed'
-  | 'payment_failed'
-  | 'canceled'
-  | 'completed'
+export type BookingStatus = z.infer<typeof bookingStatusSchema>
+export type ConsultationListScope = z.infer<
+  typeof consultationListScopeSchema
+>
 
 export type PaymentStatus =
   | 'pending'
@@ -153,6 +156,78 @@ export interface ConsultationDetailsResult {
   }
 }
 
+export type ConsultationListQuery = z.output<typeof consultationListQuerySchema>
+
+export interface ConsultationListCursor {
+  version: 1
+  scope: ConsultationListScope
+  status?: BookingStatus
+  consultationDate: string
+  timeSlot: ConsultationTimeSlot
+  id: string
+}
+
+export interface MyConsultationListRecord {
+  id: string
+  status: BookingStatus
+  method: CreateCheckoutInput['method']
+  consultationDate: string
+  timeSlot: ConsultationTimeSlot
+  designField: string | null
+  designFocus: string | null
+  notes: string | null
+  createdAt: Date
+  consultant: {
+    displayName: string
+    title: string
+    avatarUrl: string | null
+  } | null
+}
+
+export interface MyConsultationListItem {
+  id: string
+  status: BookingStatus
+  method: CreateCheckoutInput['method']
+  consultationDate: string
+  timeSlot: ConsultationTimeSlot
+  designField?: string
+  designFocus?: string
+  notes?: string
+  consultant?: {
+    displayName: string
+    title: string
+    avatarUrl?: string
+  }
+  createdAt: string
+}
+
+export interface MyConsultationListResult {
+  items: MyConsultationListItem[]
+  nextCursor?: string
+}
+
+export interface ConsultationListRequest {
+  auth: AuthContext
+  query: ConsultationListQuery
+}
+
+export type FindMyBookingsInput =
+  | {
+      profileId: string
+      scope: 'all'
+      status?: BookingStatus
+      limit: number
+      cursor?: ConsultationListCursor
+    }
+  | {
+      profileId: string
+      scope: 'upcoming'
+      limit: number
+      cursor?: ConsultationListCursor
+      today: string
+      todayTimeSlots: ConsultationTimeSlot[]
+    }
+
 export interface CheckoutCommand {
   idempotencyKey: string
   auth: {
@@ -175,6 +250,7 @@ export interface CheckoutPrice {
 
 export interface ConsultationRepository {
   findDetails(bookingId: string): Promise<ConsultationDetailsRecord | null>
+  findMyBookings(input: FindMyBookingsInput): Promise<MyConsultationListRecord[]>
   findOccupiedSlots(
     date: string,
     now: Date

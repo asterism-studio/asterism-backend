@@ -10,6 +10,7 @@ import { validateRequest } from '../../middleware/validateRequest.js'
 import {
   availabilityQuerySchema,
   bookingIdSchema,
+  consultationListQuerySchema,
   createCheckoutSchema,
   idempotencyKeySchema
 } from './schema.js'
@@ -19,6 +20,8 @@ import type {
   CheckoutResult,
   ConsultationAvailabilityRequest,
   ConsultationAvailabilityResult,
+  ConsultationListRequest,
+  MyConsultationListResult,
   ConsultationDetailsRequest,
   ConsultationDetailsResult,
   CreateCheckoutInput
@@ -30,6 +33,9 @@ interface ConsultationRouterDependencies {
   getAvailability(
     request: ConsultationAvailabilityRequest
   ): Promise<ConsultationAvailabilityResult>
+  getMyConsultations(
+    request: ConsultationListRequest
+  ): Promise<MyConsultationListResult>
   getBooking(
     request: ConsultationDetailsRequest
   ): Promise<ConsultationDetailsResult>
@@ -103,6 +109,26 @@ const validateAvailabilityQuery: RequestHandler = (req, res, next) => {
   next()
 }
 
+const validateConsultationListQuery: RequestHandler = (req, res, next) => {
+  const result = consultationListQuerySchema.safeParse(req.query)
+
+  if (!result.success) {
+    throw new AppError(
+      400,
+      'VALIDATION_ERROR',
+      'Request validation failed.',
+      result.error.issues.map(({ code, message, path }) => ({
+        path: ['query', ...path],
+        code,
+        message
+      }))
+    )
+  }
+
+  res.locals.consultationListQuery = result.data
+  next()
+}
+
 export const createConsultationRouter = (
   dependencies: ConsultationRouterDependencies
 ): Router => {
@@ -161,6 +187,24 @@ export const createConsultationRouter = (
       const result = await dependencies.getAvailability({
         ...query,
         auth: res.locals.auth
+      })
+
+      res.json({
+        success: true,
+        data: result,
+        error: null
+      })
+    }
+  )
+
+  router.get(
+    '/me',
+    createRequireAuth(dependencies.authVerifier),
+    validateConsultationListQuery,
+    async (_req, res) => {
+      const result = await dependencies.getMyConsultations({
+        auth: res.locals.auth,
+        query: res.locals.consultationListQuery
       })
 
       res.json({

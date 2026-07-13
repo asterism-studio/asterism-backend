@@ -123,6 +123,7 @@ const createServiceFixture = (
   const dependencies: CheckoutDependencies = {
     consultations: {
       findDetails: async () => null,
+      findMyBookings: async () => [],
       findOccupiedSlots: async () => [],
       findOccupiedSlotsInRange: async () => [],
       findCheckout: async (profileId, key) => {
@@ -400,6 +401,7 @@ const createCheckoutHttpApp = (options: {
     getAvailability: async () => {
       throw new Error('Availability is outside this test.')
     },
+    getMyConsultations: async () => ({ items: [] }),
     getBooking: async () => {
       throw new Error('Booking query is outside this test.')
     },

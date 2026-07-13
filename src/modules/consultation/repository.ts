@@ -4,7 +4,10 @@ import type {
 } from '../../generated/prisma/client.js'
 import type {
   BookingRecord,
+  ConsultationListCursor,
   ConsultationRepository,
+  FindMyBookingsInput,
+  MyConsultationListRecord,
   PaymentRecord
 } from './types.js'
 
@@ -42,6 +45,50 @@ const toPaymentRecord = (
 
 const toDatabaseDate = (date: string): Date =>
   new Date(`${date}T00:00:00.000Z`)
+
+const buildConsultationListCursorWhere = (
+  cursor: ConsultationListCursor
+): Prisma.ConsultationBookingWhereInput => {
+  const consultationDate = toDatabaseDate(cursor.consultationDate)
+
+  if (cursor.timeSlot === 'am') {
+    return {
+      OR: [
+        { consultationDate: { gt: consultationDate } },
+        { consultationDate, timeSlot: 'pm' },
+        { consultationDate, timeSlot: 'am', id: { gt: cursor.id } }
+      ]
+    }
+  }
+
+  return {
+    OR: [
+      { consultationDate: { gt: consultationDate } },
+      { consultationDate, timeSlot: 'pm', id: { gt: cursor.id } }
+    ]
+  }
+}
+
+const buildConsultationListWhere = (
+  input: FindMyBookingsInput
+): Prisma.ConsultationBookingWhereInput => {
+  if (input.scope === 'upcoming') {
+    const today = toDatabaseDate(input.today)
+
+    return {
+      status: 'confirmed',
+      OR: [
+        { consultationDate: { gt: today } },
+        {
+          consultationDate: today,
+          timeSlot: { in: input.todayTimeSlots }
+        }
+      ]
+    }
+  }
+
+  return input.status ? { status: input.status } : {}
+}
 
 const isUniqueConstraintError = (error: unknown): boolean =>
   typeof error === 'object' &&
@@ -157,6 +204,55 @@ export const createConsultationRepository = (
       payment: booking.payment,
       consultant: booking.consultant
     }
+  },
+
+  findMyBookings: async (input) => {
+    const bookings = await database.consultationBooking.findMany({
+      where: {
+        profileId: input.profileId,
+        ...buildConsultationListWhere(input),
+        ...(input.cursor
+          ? { AND: buildConsultationListCursorWhere(input.cursor) }
+          : {})
+      },
+      orderBy: [
+        { consultationDate: 'asc' },
+        { timeSlot: 'asc' },
+        { id: 'asc' }
+      ],
+      take: input.limit + 1,
+      select: {
+        id: true,
+        status: true,
+        method: true,
+        consultationDate: true,
+        timeSlot: true,
+        designField: true,
+        designFocus: true,
+        notes: true,
+        createdAt: true,
+        consultant: {
+          select: {
+            displayName: true,
+            title: true,
+            avatarUrl: true
+          }
+        }
+      }
+    })
+
+    return bookings.map((booking): MyConsultationListRecord => ({
+      id: booking.id,
+      status: booking.status,
+      method: booking.method,
+      consultationDate: toDateOnly(booking.consultationDate),
+      timeSlot: booking.timeSlot,
+      designField: booking.designField,
+      designFocus: booking.designFocus,
+      notes: booking.notes,
+      createdAt: booking.createdAt,
+      consultant: booking.consultant
+    }))
   },
 
   findCheckout: async (profileId, idempotencyKey) => {

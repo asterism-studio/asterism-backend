@@ -259,6 +259,7 @@ const createAvailabilityHttpApp = () => {
             endDate:
               monthEndDates[request.month as keyof typeof monthEndDates]
           },
+    getMyConsultations: async () => ({ items: [] }),
     getBooking: async ({ bookingId: requestedBookingId }) => ({
       booking: {
         id: requestedBookingId,

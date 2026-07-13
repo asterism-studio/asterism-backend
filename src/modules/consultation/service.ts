@@ -1,4 +1,8 @@
 import { AppError } from '../../middleware/errorHandler.js'
+import {
+  decodeConsultationListCursor,
+  encodeConsultationListCursor
+} from './pagination.js'
 import type {
   BookingRecord,
   CheckoutCommand,
@@ -8,8 +12,14 @@ import type {
   ConsultationDayAvailability,
   ConsultationAvailabilityRequest,
   ConsultationAvailabilityResult,
+  ConsultationListRequest,
+  ConsultationListCursor,
   ConsultationDetailsRequest,
   ConsultationDetailsResult,
+  ConsultationTimeSlot,
+  MyConsultationListItem,
+  MyConsultationListRecord,
+  MyConsultationListResult,
   ConsultationRepository
 } from './types.js'
 
@@ -68,16 +78,50 @@ const slotUnavailable = () =>
 
 const toDateOnly = (date: Date): string => date.toISOString().slice(0, 10)
 
-const toTaipeiDateOnly = (date: Date): string => {
+const optionalText = (value: string | null): string | undefined => {
+  if (!value || value.trim().length === 0) {
+    return undefined
+  }
+
+  return value
+}
+
+const getTaipeiDateTimeParts = (date: Date) => {
   const parts = new Intl.DateTimeFormat('en-US', {
     timeZone: 'Asia/Taipei',
     year: 'numeric',
     month: '2-digit',
-    day: '2-digit'
+    day: '2-digit',
+    hour: '2-digit',
+    hourCycle: 'h23'
   }).formatToParts(date)
-  const values = Object.fromEntries(parts.map((part) => [part.type, part.value]))
+  const values = Object.fromEntries(
+    parts.map((part) => [part.type, part.value])
+  )
+
+  if (!values.year || !values.month || !values.day || !values.hour) {
+    throw new Error('Failed to resolve Taipei date and time.')
+  }
+
+  return values
+}
+
+const toTaipeiDateOnly = (date: Date): string => {
+  const values = getTaipeiDateTimeParts(date)
 
   return `${values.year}-${values.month}-${values.day}`
+}
+
+const getTaipeiUpcomingWindow = (date: Date): {
+  today: string
+  todayTimeSlots: ConsultationTimeSlot[]
+} => {
+  const values = getTaipeiDateTimeParts(date)
+
+  return {
+    today: `${values.year}-${values.month}-${values.day}`,
+    todayTimeSlots: Number(values.hour) < 12 ? ['am', 'pm'] : ['pm']
+  }
 }
 
 const getMonthRange = (month: string) => {
@@ -265,6 +309,111 @@ export const createConsultationQueryService = (
             avatarUrl: details.consultant.avatarUrl ?? undefined
           }
         : undefined
+    }
+  }
+}
+
+const toConsultationListItem = (
+  record: MyConsultationListRecord
+): MyConsultationListItem => ({
+  id: record.id,
+  status: record.status,
+  method: record.method,
+  consultationDate: record.consultationDate,
+  timeSlot: record.timeSlot,
+  ...(optionalText(record.designField)
+    ? { designField: optionalText(record.designField) }
+    : {}),
+  ...(optionalText(record.designFocus)
+    ? { designFocus: optionalText(record.designFocus) }
+    : {}),
+  ...(optionalText(record.notes) ? { notes: optionalText(record.notes) } : {}),
+  ...(record.consultant
+    ? {
+        consultant: {
+          displayName: record.consultant.displayName,
+          title: record.consultant.title,
+          ...(optionalText(record.consultant.avatarUrl)
+            ? { avatarUrl: optionalText(record.consultant.avatarUrl) }
+            : {})
+        }
+      }
+    : {}),
+  createdAt: record.createdAt.toISOString()
+})
+
+export const createConsultationListService = (
+  dependencies: {
+    consultations: Pick<
+      ConsultationRepository,
+      'findProfile' | 'findMyBookings'
+    >
+    now(): Date
+  }
+) => {
+  const { consultations } = dependencies
+
+  return async (
+    request: ConsultationListRequest
+  ): Promise<MyConsultationListResult> => {
+    const profile = await consultations.findProfile(request.auth.userId)
+
+    if (!profile) {
+      throw new AppError(
+        404,
+        'PROFILE_NOT_FOUND',
+        'The authenticated profile was not found.'
+      )
+    }
+
+    const cursor = request.query.cursor
+      ? decodeConsultationListCursor(
+          request.query.cursor,
+          request.query.scope,
+          request.query.scope === 'all' ? request.query.status : undefined
+        )
+      : undefined
+    const records =
+      request.query.scope === 'upcoming'
+        ? await consultations.findMyBookings({
+            profileId: profile.id,
+            scope: 'upcoming',
+            limit: request.query.limit,
+            cursor,
+            ...getTaipeiUpcomingWindow(dependencies.now())
+          })
+        : await consultations.findMyBookings({
+            profileId: profile.id,
+            scope: 'all',
+            status: request.query.status,
+            limit: request.query.limit,
+            cursor
+          })
+    const hasNextPage = records.length > request.query.limit
+    const visibleRecords = hasNextPage
+      ? records.slice(0, request.query.limit)
+      : records
+    const items = visibleRecords.map(toConsultationListItem)
+    const lastRecord = visibleRecords.at(-1)
+
+    if (!hasNextPage || !lastRecord) {
+      return { items }
+    }
+
+    const nextCursor: ConsultationListCursor = {
+      version: 1,
+      scope: request.query.scope,
+      ...(request.query.scope === 'all' && request.query.status
+        ? { status: request.query.status }
+        : {}),
+      consultationDate: lastRecord.consultationDate,
+      timeSlot: lastRecord.timeSlot,
+      id: lastRecord.id
+    }
+
+    return {
+      items,
+      nextCursor: encodeConsultationListCursor(nextCursor)
     }
   }
 }

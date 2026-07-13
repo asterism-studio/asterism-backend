@@ -3,6 +3,14 @@ import { z } from 'zod'
 const DATE_ONLY_PATTERN = /^\d{4}-\d{2}-\d{2}$/
 const MONTH_ONLY_PATTERN = /^\d{4}-\d{2}$/
 
+export const bookingStatusSchema = z.enum([
+  'pending_payment',
+  'confirmed',
+  'payment_failed',
+  'canceled',
+  'completed'
+])
+
 const isValidDateOnly = (value: string): boolean => {
   if (!DATE_ONLY_PATTERN.test(value)) {
     return false
@@ -31,6 +39,10 @@ const getTaipeiDate = (): string => {
 }
 
 const getTaipeiMonth = (): string => getTaipeiDate().slice(0, 7)
+
+const validDateOnlySchema = z
+  .string()
+  .refine(isValidDateOnly, 'Value must be a valid YYYY-MM-DD.')
 
 const dateOnlySchema = (fieldName: string) => z
   .string()
@@ -103,3 +115,63 @@ export const availabilityQuerySchema = z.union([
 ])
 
 export type AvailabilityQuery = z.infer<typeof availabilityQuerySchema>
+
+export const consultationListScopeSchema = z.enum(['all', 'upcoming'])
+
+const consultationListPaginationFields = {
+  limit: z.coerce.number().int().min(1).max(50).default(20),
+  cursor: z.string().min(1).optional()
+}
+
+export const consultationListQuerySchema = z.union([
+  z
+    .object({
+      scope: z.literal('upcoming'),
+      status: z.undefined().optional(),
+      ...consultationListPaginationFields
+    })
+    .strict(),
+  z
+    .object({
+      scope: z.literal('all').default('all'),
+      status: bookingStatusSchema.optional(),
+      ...consultationListPaginationFields
+    })
+    .strict()
+])
+
+const consultationListCursorFields = {
+  version: z.literal(1),
+  consultationDate: validDateOnlySchema,
+  timeSlot: z.enum(['am', 'pm']),
+  id: z.uuid()
+}
+
+const consultationListLegacyCursorSchema = z
+  .object({
+    ...consultationListCursorFields,
+    status: bookingStatusSchema.optional()
+  })
+  .strict()
+  .transform((cursor) => ({
+    ...cursor,
+    scope: 'all' as const
+  }))
+
+export const consultationListCursorSchema = z.union([
+  z
+    .object({
+      ...consultationListCursorFields,
+      scope: z.literal('upcoming'),
+      status: z.undefined().optional()
+    })
+    .strict(),
+  z
+    .object({
+      ...consultationListCursorFields,
+      scope: z.literal('all'),
+      status: bookingStatusSchema.optional()
+    })
+    .strict(),
+  consultationListLegacyCursorSchema
+])

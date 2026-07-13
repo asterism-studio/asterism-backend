@@ -13,6 +13,7 @@ import { createConsultationRouter } from './modules/consultation/routes.js'
 import {
   createConsultationAvailabilityService,
   createConsultationCheckoutService,
+  createConsultationListService,
   createConsultationQueryService
 } from './modules/consultation/service.js'
 import {
@@ -68,6 +69,10 @@ const consultationRouter = createConsultationRouter({
   authVerifier: createSupabaseAuthVerifier(supabase),
   checkout,
   getAvailability: createConsultationAvailabilityService({
+    consultations: consultationRepository,
+    now: () => new Date()
+  }),
+  getMyConsultations: createConsultationListService({
     consultations: consultationRepository,
     now: () => new Date()
   }),
