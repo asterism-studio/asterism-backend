@@ -2,6 +2,7 @@ import type { z } from 'zod'
 
 import type { AuthContext } from '../auth/auth.types.js'
 import type {
+  consultationListScopeSchema,
   consultationListQuerySchema,
   createCheckoutSchema,
   bookingStatusSchema
@@ -16,6 +17,9 @@ export interface CheckoutResult {
 }
 
 export type BookingStatus = z.infer<typeof bookingStatusSchema>
+export type ConsultationListScope = z.infer<
+  typeof consultationListScopeSchema
+>
 
 export type PaymentStatus =
   | 'pending'
@@ -156,6 +160,7 @@ export type ConsultationListQuery = z.output<typeof consultationListQuerySchema>
 
 export interface ConsultationListCursor {
   version: 1
+  scope: ConsultationListScope
   status?: BookingStatus
   consultationDate: string
   timeSlot: ConsultationTimeSlot
@@ -206,6 +211,23 @@ export interface ConsultationListRequest {
   query: ConsultationListQuery
 }
 
+export type FindMyBookingsInput =
+  | {
+      profileId: string
+      scope: 'all'
+      status?: BookingStatus
+      limit: number
+      cursor?: ConsultationListCursor
+    }
+  | {
+      profileId: string
+      scope: 'upcoming'
+      limit: number
+      cursor?: ConsultationListCursor
+      today: string
+      todayTimeSlots: ConsultationTimeSlot[]
+    }
+
 export interface CheckoutCommand {
   idempotencyKey: string
   auth: {
@@ -228,12 +250,7 @@ export interface CheckoutPrice {
 
 export interface ConsultationRepository {
   findDetails(bookingId: string): Promise<ConsultationDetailsRecord | null>
-  findMyBookings(input: {
-    profileId: string
-    status?: BookingStatus
-    limit: number
-    cursor?: ConsultationListCursor
-  }): Promise<MyConsultationListRecord[]>
+  findMyBookings(input: FindMyBookingsInput): Promise<MyConsultationListRecord[]>
   findOccupiedSlots(
     date: string,
     now: Date

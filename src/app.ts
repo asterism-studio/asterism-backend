@@ -72,7 +72,10 @@ const consultationRouter = createConsultationRouter({
     consultations: consultationRepository,
     now: () => new Date()
   }),
-  getMyConsultations: createConsultationListService(consultationRepository),
+  getMyConsultations: createConsultationListService({
+    consultations: consultationRepository,
+    now: () => new Date()
+  }),
   getBooking: createConsultationQueryService(consultationRepository),
   rateLimit: {
     windowMs: 10 * 60 * 1000,

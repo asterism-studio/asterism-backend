@@ -116,20 +116,62 @@ export const availabilityQuerySchema = z.union([
 
 export type AvailabilityQuery = z.infer<typeof availabilityQuerySchema>
 
-export const consultationListQuerySchema = z
-  .object({
-    status: bookingStatusSchema.optional(),
-    limit: z.coerce.number().int().min(1).max(50).default(20),
-    cursor: z.string().min(1).optional()
-  })
-  .strict()
+export const consultationListScopeSchema = z.enum(['all', 'upcoming'])
 
-export const consultationListCursorSchema = z
+const consultationListPaginationFields = {
+  limit: z.coerce.number().int().min(1).max(50).default(20),
+  cursor: z.string().min(1).optional()
+}
+
+export const consultationListQuerySchema = z.union([
+  z
+    .object({
+      scope: z.literal('upcoming'),
+      status: z.undefined().optional(),
+      ...consultationListPaginationFields
+    })
+    .strict(),
+  z
+    .object({
+      scope: z.literal('all').default('all'),
+      status: bookingStatusSchema.optional(),
+      ...consultationListPaginationFields
+    })
+    .strict()
+])
+
+const consultationListCursorFields = {
+  version: z.literal(1),
+  consultationDate: validDateOnlySchema,
+  timeSlot: z.enum(['am', 'pm']),
+  id: z.uuid()
+}
+
+const consultationListLegacyCursorSchema = z
   .object({
-    version: z.literal(1),
-    status: bookingStatusSchema.optional(),
-    consultationDate: validDateOnlySchema,
-    timeSlot: z.enum(['am', 'pm']),
-    id: z.uuid()
+    ...consultationListCursorFields,
+    status: bookingStatusSchema.optional()
   })
   .strict()
+  .transform((cursor) => ({
+    ...cursor,
+    scope: 'all' as const
+  }))
+
+export const consultationListCursorSchema = z.union([
+  z
+    .object({
+      ...consultationListCursorFields,
+      scope: z.literal('upcoming'),
+      status: z.undefined().optional()
+    })
+    .strict(),
+  z
+    .object({
+      ...consultationListCursorFields,
+      scope: z.literal('all'),
+      status: bookingStatusSchema.optional()
+    })
+    .strict(),
+  consultationListLegacyCursorSchema
+])

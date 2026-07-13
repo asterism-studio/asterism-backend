@@ -2,7 +2,8 @@ import { AppError } from '../../middleware/errorHandler.js'
 import { consultationListCursorSchema } from './schema.js'
 import type {
   BookingStatus,
-  ConsultationListCursor
+  ConsultationListCursor,
+  ConsultationListScope
 } from './types.js'
 
 const invalidCursor = (): AppError =>
@@ -18,6 +19,7 @@ export const encodeConsultationListCursor = (
 
 export const decodeConsultationListCursor = (
   value: string,
+  scope: ConsultationListScope,
   status?: BookingStatus
 ): ConsultationListCursor => {
   try {
@@ -26,7 +28,14 @@ export const decodeConsultationListCursor = (
     )
     const result = consultationListCursorSchema.safeParse(decoded)
 
-    if (!result.success || result.data.status !== status) {
+    const matchesContext =
+      result.success &&
+      result.data.scope === scope &&
+      (scope === 'upcoming'
+        ? result.data.status === undefined
+        : result.data.status === status)
+
+    if (!matchesContext) {
       throw invalidCursor()
     }
 

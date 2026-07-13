@@ -16,6 +16,7 @@ import type {
   ConsultationListCursor,
   ConsultationDetailsRequest,
   ConsultationDetailsResult,
+  ConsultationTimeSlot,
   MyConsultationListItem,
   MyConsultationListRecord,
   MyConsultationListResult,
@@ -85,16 +86,42 @@ const optionalText = (value: string | null): string | undefined => {
   return value
 }
 
-const toTaipeiDateOnly = (date: Date): string => {
+const getTaipeiDateTimeParts = (date: Date) => {
   const parts = new Intl.DateTimeFormat('en-US', {
     timeZone: 'Asia/Taipei',
     year: 'numeric',
     month: '2-digit',
-    day: '2-digit'
+    day: '2-digit',
+    hour: '2-digit',
+    hourCycle: 'h23'
   }).formatToParts(date)
-  const values = Object.fromEntries(parts.map((part) => [part.type, part.value]))
+  const values = Object.fromEntries(
+    parts.map((part) => [part.type, part.value])
+  )
+
+  if (!values.year || !values.month || !values.day || !values.hour) {
+    throw new Error('Failed to resolve Taipei date and time.')
+  }
+
+  return values
+}
+
+const toTaipeiDateOnly = (date: Date): string => {
+  const values = getTaipeiDateTimeParts(date)
 
   return `${values.year}-${values.month}-${values.day}`
+}
+
+const getTaipeiUpcomingWindow = (date: Date): {
+  today: string
+  todayTimeSlots: ConsultationTimeSlot[]
+} => {
+  const values = getTaipeiDateTimeParts(date)
+
+  return {
+    today: `${values.year}-${values.month}-${values.day}`,
+    todayTimeSlots: Number(values.hour) < 12 ? ['am', 'pm'] : ['pm']
+  }
 }
 
 const getMonthRange = (month: string) => {
@@ -316,11 +343,16 @@ const toConsultationListItem = (
 })
 
 export const createConsultationListService = (
-  consultations: Pick<
-    ConsultationRepository,
-    'findProfile' | 'findMyBookings'
-  >
+  dependencies: {
+    consultations: Pick<
+      ConsultationRepository,
+      'findProfile' | 'findMyBookings'
+    >
+    now(): Date
+  }
 ) => {
+  const { consultations } = dependencies
+
   return async (
     request: ConsultationListRequest
   ): Promise<MyConsultationListResult> => {
@@ -337,15 +369,26 @@ export const createConsultationListService = (
     const cursor = request.query.cursor
       ? decodeConsultationListCursor(
           request.query.cursor,
-          request.query.status
+          request.query.scope,
+          request.query.scope === 'all' ? request.query.status : undefined
         )
       : undefined
-    const records = await consultations.findMyBookings({
-      profileId: profile.id,
-      status: request.query.status,
-      limit: request.query.limit,
-      cursor
-    })
+    const records =
+      request.query.scope === 'upcoming'
+        ? await consultations.findMyBookings({
+            profileId: profile.id,
+            scope: 'upcoming',
+            limit: request.query.limit,
+            cursor,
+            ...getTaipeiUpcomingWindow(dependencies.now())
+          })
+        : await consultations.findMyBookings({
+            profileId: profile.id,
+            scope: 'all',
+            status: request.query.status,
+            limit: request.query.limit,
+            cursor
+          })
     const hasNextPage = records.length > request.query.limit
     const visibleRecords = hasNextPage
       ? records.slice(0, request.query.limit)
@@ -359,7 +402,10 @@ export const createConsultationListService = (
 
     const nextCursor: ConsultationListCursor = {
       version: 1,
-      status: request.query.status,
+      scope: request.query.scope,
+      ...(request.query.scope === 'all' && request.query.status
+        ? { status: request.query.status }
+        : {}),
       consultationDate: lastRecord.consultationDate,
       timeSlot: lastRecord.timeSlot,
       id: lastRecord.id

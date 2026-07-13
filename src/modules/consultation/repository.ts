@@ -6,6 +6,7 @@ import type {
   BookingRecord,
   ConsultationListCursor,
   ConsultationRepository,
+  FindMyBookingsInput,
   MyConsultationListRecord,
   PaymentRecord
 } from './types.js'
@@ -66,6 +67,27 @@ const buildConsultationListCursorWhere = (
       { consultationDate, timeSlot: 'pm', id: { gt: cursor.id } }
     ]
   }
+}
+
+const buildConsultationListWhere = (
+  input: FindMyBookingsInput
+): Prisma.ConsultationBookingWhereInput => {
+  if (input.scope === 'upcoming') {
+    const today = toDatabaseDate(input.today)
+
+    return {
+      status: 'confirmed',
+      OR: [
+        { consultationDate: { gt: today } },
+        {
+          consultationDate: today,
+          timeSlot: { in: input.todayTimeSlots }
+        }
+      ]
+    }
+  }
+
+  return input.status ? { status: input.status } : {}
 }
 
 const isUniqueConstraintError = (error: unknown): boolean =>
@@ -184,13 +206,13 @@ export const createConsultationRepository = (
     }
   },
 
-  findMyBookings: async ({ profileId, status, limit, cursor }) => {
+  findMyBookings: async (input) => {
     const bookings = await database.consultationBooking.findMany({
       where: {
-        profileId,
-        ...(status ? { status } : {}),
-        ...(cursor
-          ? { AND: buildConsultationListCursorWhere(cursor) }
+        profileId: input.profileId,
+        ...buildConsultationListWhere(input),
+        ...(input.cursor
+          ? { AND: buildConsultationListCursorWhere(input.cursor) }
           : {})
       },
       orderBy: [
@@ -198,7 +220,7 @@ export const createConsultationRepository = (
         { timeSlot: 'asc' },
         { id: 'asc' }
       ],
-      take: limit + 1,
+      take: input.limit + 1,
       select: {
         id: true,
         status: true,
