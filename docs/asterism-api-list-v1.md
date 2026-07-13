@@ -381,15 +381,20 @@ Authorization: Bearer <supabase_access_token>
 ### Query parameters
 
 ```txt
+scope=all|upcoming
 status=pending_payment|confirmed|payment_failed|canceled|completed
 limit=20
 cursor=...
 ```
 
-- `status` optional，用於篩選 booking status。
+- `scope` optional，預設 `all`。
+- `scope=all` 可搭配 optional `status` 篩選。
+- `scope=upcoming` 固定只查 `confirmed`，不接受 `status`；`scope=upcoming&status=confirmed` 與 `scope=upcoming&status=pending_payment` 都回傳 `400 VALIDATION_ERROR`。
+- `scope=upcoming` 依 `Asia/Taipei` 判斷日期與 AM/PM 邊界：台北 12:00 前保留今天 AM/PM，12:00 起排除今天 AM、保留今天 PM；明天以後的 AM/PM 都保留。
+- `status` optional，僅在 `scope=all` 時用於篩選 booking status；`scope=upcoming` 不接受。
 - `limit` optional，預設 `20`，只接受 `1..50` 的整數。
 - `cursor` optional，用於 cursor-based pagination；無法解碼或欄位不合法時回傳 `400 VALIDATION_ERROR`。
-- query 使用 strict parsing；`status`、`limit`、`cursor` 以外的 query parameter 回傳 `400 VALIDATION_ERROR`。
+- query 使用 strict parsing；`scope`、`status`、`limit`、`cursor` 以外的 query parameter 回傳 `400 VALIDATION_ERROR`。
 
 ### 後端查詢條件
 
@@ -398,8 +403,10 @@ profileId = currentAuthProfile.id
 ```
 
 - `profileId` 必須由 auth context 取得，不接受前端傳入。
+- `scope=all` 時使用 optional `status`；`scope=upcoming` 時使用 `status = confirmed`，並排除台北當日已過的日期／AM 時段。
 - 預設依 `consultationDate ASC`、`timeSlot ASC`、`id ASC` 排序；`id` 是相同日期與時段時的唯一 tie-breaker。
-- cursor payload 包含 `version: 1`、目前的 `status` filter、`consultationDate`、`timeSlot` 與 `id`；cursor 的 status context 與目前 query 不一致時回傳 `400 VALIDATION_ERROR`。
+- cursor payload 包含 `version: 1`、`scope`、`scope=all` 時的 `status` filter、`consultationDate`、`timeSlot` 與 `id`；cursor 的 scope/status context 與目前 query 不一致時回傳 `400 VALIDATION_ERROR`。
+- 為維持既有 `scope=all` 分頁相容性，沒有 `scope` 欄位的舊 version 1 cursor 會視為 `scope=all`；legacy cursor 不可用於 `scope=upcoming`。
 - `timeSlot` 是 Prisma enum，repository 依 `am` / `pm` 明確展開 seek condition，不假設 enum 支援 `gt` / `lt` filter。
 - 列表 endpoint 只回傳頁面需要的摘要欄位，不直接沿用單筆詳情 `ConsultationBookingDetail`。
 
@@ -458,15 +465,15 @@ profileId = currentAuthProfile.id
 
 | 狀態碼 | Code | 情境 |
 |---:|---|---|
-| `400` | `VALIDATION_ERROR` | `status`、`limit` 或 `cursor` 格式錯誤 |
+| `400` | `VALIDATION_ERROR` | `scope` / `status` 組合、`limit` 或 `cursor` 格式錯誤 |
 | `401` | `UNAUTHORIZED` | 未登入或 token 無效 |
 | `404` | `PROFILE_NOT_FOUND` | 找不到對應 profile |
 
 ### 注意事項
 
 - `GET /api/v1/consultations/me` 使用獨立列表 DTO，不直接定義為 `ConsultationBookingDetail[]`。
-- 此 endpoint 回傳所有符合條件的預約紀錄，不預設只回傳 upcoming；前端應使用「我的預約」或「預約紀錄」等通用文案。
-- 本 issue 不新增 `upcoming`、`scope`、日期區間或過去／未來分組 query parameter。
+- 預設 `scope=all` 維持完整紀錄行為；前端「即將到來」頁面應明確使用 `scope=upcoming`。
+- `scope=upcoming` 不包含 `pending_payment`、`payment_failed`、`canceled` 或 `completed`；日期或時段過期不會自動改寫 booking status。
 - `method`、`status`、`timeSlot` 回傳後端 enum 原始值，不回傳 `Online`、`In-Person` 等 UI 顯示文字。
 - Optional 欄位為 `null`、空字串或純空白時省略，不以空字串偽造資料；非空 `notes` 原始內容不由 mapper 改寫。
 - 列表需要顧問摘要時由此 API 一次回傳，不應讓前端針對每筆 booking 再呼叫 `GET /api/v1/consultations/:bookingId`。
