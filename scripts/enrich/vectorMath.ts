@@ -5,3 +5,13 @@ export function l2Normalize(vector: number[]): number[] {
   if (norm === 0) return vector
   return vector.map((value) => value / norm)
 }
+
+// 兩向量內積；輸入皆已 L2 normalize 時即為 cosine similarity。
+export function dot(a: number[], b: number[]): number {
+  if (a.length !== b.length) {
+    throw new Error(`dot() 維度不一致: ${a.length} vs ${b.length}`)
+  }
+  let sum = 0
+  for (let i = 0; i < a.length; i++) sum += a[i] * b[i]
+  return sum
+}

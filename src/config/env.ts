@@ -22,14 +22,19 @@ const requireEnv = (key: string): string => {
   return value
 }
 
+const parseOrigins = (value: string | undefined): string[] =>
+  (value ?? 'http://localhost:5173').split(',').map(s => s.trim())
+
 export const env = {
   nodeEnv: process.env.NODE_ENV ?? 'development',
   port: parsePort(process.env.PORT),
-  frontendOrigin: process.env.FRONTEND_ORIGIN ?? 'http://localhost:5173',
+  frontendOrigin: parseOrigins(process.env.FRONTEND_ORIGIN),
+  frontendUrl: (process.env.FRONTEND_ORIGIN ?? 'http://localhost:5173').split(',')[0].trim(),
   databaseUrl: requireEnv('DATABASE_URL'),
   supabaseUrl: requireEnv('SUPABASE_URL'),
   supabaseAnonKey: requireEnv('SUPABASE_ANON_KEY'),
   stripeSecretKey: requireEnv('STRIPE_SECRET_KEY'),
+  stripeWebhookSecret: requireEnv('STRIPE_WEBHOOK_SECRET'),
   stripeConsultationPriceId: requireEnv('STRIPE_CONSULTATION_PRICE_ID'),
   stripeCheckoutSuccessPath: process.env.STRIPE_CHECKOUT_SUCCESS_PATH ?? '/consultant?payment=success',
   stripeCheckoutCancelPath: process.env.STRIPE_CHECKOUT_CANCEL_PATH ?? '/consultant?payment=cancel',

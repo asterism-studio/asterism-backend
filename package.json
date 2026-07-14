@@ -16,7 +16,11 @@
     "backfill:embeddings": "tsx scripts/backfillImageEmbeddings.ts",
     "reclassify:submedium": "tsx scripts/reclassifySubMedium.ts",
     "recompute:needs-review": "tsx scripts/recomputeNeedsReview.ts",
-    "compute:style-anchors": "tsx scripts/computeStyleGroupAnchors.ts"
+    "compute:style-anchors": "tsx scripts/computeStyleGroupAnchors.ts",
+    "calibrate:gate": "tsx scripts/calibrateRelevanceGate.ts",
+    "selfcheck:enrich": "tsx scripts/enrich/selfcheck.ts",
+    "collect:gate-eval": "tsx scripts/collectGateEvalSet.ts",
+    "eval:domain": "tsx scripts/evalDomainGate.ts"
   },
   "keywords": [],
   "author": "",
