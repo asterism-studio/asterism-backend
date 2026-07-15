@@ -16,7 +16,13 @@
     "calibrate:gate": "tsx scripts/calibrateRelevanceGate.ts",
     "reclassify:submedium": "tsx scripts/reclassifySubMedium.ts",
     "recompute:needs-review": "tsx scripts/recomputeNeedsReview.ts",
-    "selfcheck:enrich": "tsx scripts/enrich/selfcheck.ts"
+    "selfcheck:enrich": "tsx scripts/enrich/selfcheck.ts",
+    "backfill:embeddings": "tsx scripts/backfillImageEmbeddings.ts",
+    "compute:style-anchors": "tsx scripts/computeStyleGroupAnchors.ts",
+    "compute:gate-anchors": "tsx scripts/computeGatePromptAnchors.ts",
+    "collect:negatives": "tsx scripts/collectNegativeSamples.ts",
+    "collect:gate-eval": "tsx scripts/collectGateEvalSet.ts",
+    "eval:domain": "tsx scripts/evalDomainGate.ts"
   },
   "keywords": [],
   "author": "",

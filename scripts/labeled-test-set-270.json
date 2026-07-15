@@ -1,0 +1,1082 @@
+[
+  {
+    "imageId": "ext-unsplash-UL004XCLdcI",
+    "groundTruthStyleGroup": "Experimental & Avant-Garde"
+  },
+  {
+    "imageId": "eag-architecture-facade-002",
+    "groundTruthStyleGroup": "Experimental & Avant-Garde"
+  },
+  {
+    "imageId": "ext-pexels-3610195",
+    "groundTruthStyleGroup": "Experimental & Avant-Garde"
+  },
+  {
+    "imageId": "ext-unsplash-sILW2r09wOk",
+    "groundTruthStyleGroup": "Experimental & Avant-Garde"
+  },
+  {
+    "imageId": "eag-architecture-entrance-001",
+    "groundTruthStyleGroup": "Experimental & Avant-Garde"
+  },
+  {
+    "imageId": "eag-architecture-facade-001",
+    "groundTruthStyleGroup": "Experimental & Avant-Garde"
+  },
+  {
+    "imageId": "eag-architecture-staircase-001",
+    "groundTruthStyleGroup": "Experimental & Avant-Garde"
+  },
+  {
+    "imageId": "eag-architecture-001",
+    "groundTruthStyleGroup": "Experimental & Avant-Garde"
+  },
+  {
+    "imageId": "ext-unsplash-VO7HVshBK5Y",
+    "groundTruthStyleGroup": "Experimental & Avant-Garde"
+  },
+  {
+    "imageId": "ext-pexels-17589471",
+    "groundTruthStyleGroup": "Experimental & Avant-Garde"
+  },
+  {
+    "imageId": "ext-pexels-13762563",
+    "groundTruthStyleGroup": "Experimental & Avant-Garde"
+  },
+  {
+    "imageId": "ext-pexels-5465156",
+    "groundTruthStyleGroup": "Experimental & Avant-Garde"
+  },
+  {
+    "imageId": "ext-unsplash-kw_6koaT6F8",
+    "groundTruthStyleGroup": "Experimental & Avant-Garde"
+  },
+  {
+    "imageId": "ext-unsplash-V9zInThgKa4",
+    "groundTruthStyleGroup": "Experimental & Avant-Garde"
+  },
+  {
+    "imageId": "ext-unsplash-Y6tGu-OH8lA",
+    "groundTruthStyleGroup": "Experimental & Avant-Garde"
+  },
+  {
+    "imageId": "ext-pexels-3964566",
+    "groundTruthStyleGroup": "Experimental & Avant-Garde"
+  },
+  {
+    "imageId": "ext-pexels-15207412",
+    "groundTruthStyleGroup": "Experimental & Avant-Garde"
+  },
+  {
+    "imageId": "eag-graphic-poster-001",
+    "groundTruthStyleGroup": "Experimental & Avant-Garde"
+  },
+  {
+    "imageId": "eag-graphic-001",
+    "groundTruthStyleGroup": "Experimental & Avant-Garde"
+  },
+  {
+    "imageId": "eag-interior-001",
+    "groundTruthStyleGroup": "Experimental & Avant-Garde"
+  },
+  {
+    "imageId": "eag-outfit-bottom-001",
+    "groundTruthStyleGroup": "Experimental & Avant-Garde"
+  },
+  {
+    "imageId": "eag-outfit-001",
+    "groundTruthStyleGroup": "Experimental & Avant-Garde"
+  },
+  {
+    "imageId": "eag-outfit-top-001",
+    "groundTruthStyleGroup": "Experimental & Avant-Garde"
+  },
+  {
+    "imageId": "eag-outfit-accessory-001",
+    "groundTruthStyleGroup": "Experimental & Avant-Garde"
+  },
+  {
+    "imageId": "eag-outfit-dress-001",
+    "groundTruthStyleGroup": "Experimental & Avant-Garde"
+  },
+  {
+    "imageId": "eag-main-001",
+    "groundTruthStyleGroup": "Experimental & Avant-Garde"
+  },
+  {
+    "imageId": "eag-main-005",
+    "groundTruthStyleGroup": "Experimental & Avant-Garde"
+  },
+  {
+    "imageId": "eag-main-004",
+    "groundTruthStyleGroup": "Experimental & Avant-Garde"
+  },
+  {
+    "imageId": "eag-main-002",
+    "groundTruthStyleGroup": "Experimental & Avant-Garde"
+  },
+  {
+    "imageId": "eag-main-003",
+    "groundTruthStyleGroup": "Experimental & Avant-Garde"
+  },
+  {
+    "imageId": "ext-unsplash-sh-_WiOrlR8",
+    "groundTruthStyleGroup": "Minimal & Structured Modern"
+  },
+  {
+    "imageId": "ext-unsplash-DFdC1FSDWm0",
+    "groundTruthStyleGroup": "Minimal & Structured Modern"
+  },
+  {
+    "imageId": "ext-unsplash-Rd-dd7Efxdc",
+    "groundTruthStyleGroup": "Minimal & Structured Modern"
+  },
+  {
+    "imageId": "msm-architecture-staircase-001",
+    "groundTruthStyleGroup": "Minimal & Structured Modern"
+  },
+  {
+    "imageId": "ext-pexels-929278",
+    "groundTruthStyleGroup": "Minimal & Structured Modern"
+  },
+  {
+    "imageId": "ext-pexels-28945207",
+    "groundTruthStyleGroup": "Minimal & Structured Modern"
+  },
+  {
+    "imageId": "ext-unsplash-4dbuCorapvg",
+    "groundTruthStyleGroup": "Minimal & Structured Modern"
+  },
+  {
+    "imageId": "msm-architecture-001",
+    "groundTruthStyleGroup": "Minimal & Structured Modern"
+  },
+  {
+    "imageId": "msm-architecture-window-001",
+    "groundTruthStyleGroup": "Minimal & Structured Modern"
+  },
+  {
+    "imageId": "ext-unsplash-Q9uG_lSKWTQ",
+    "groundTruthStyleGroup": "Minimal & Structured Modern"
+  },
+  {
+    "imageId": "ext-pexels-9594084",
+    "groundTruthStyleGroup": "Minimal & Structured Modern"
+  },
+  {
+    "imageId": "ext-pexels-8408540",
+    "groundTruthStyleGroup": "Minimal & Structured Modern"
+  },
+  {
+    "imageId": "msm-graphic-editorial-001",
+    "groundTruthStyleGroup": "Minimal & Structured Modern"
+  },
+  {
+    "imageId": "ext-unsplash-sCSV6kkJ1Ig",
+    "groundTruthStyleGroup": "Minimal & Structured Modern"
+  },
+  {
+    "imageId": "msm-interior-chair-001",
+    "groundTruthStyleGroup": "Minimal & Structured Modern"
+  },
+  {
+    "imageId": "ext-unsplash-8ukwGfGi9RQ",
+    "groundTruthStyleGroup": "Minimal & Structured Modern"
+  },
+  {
+    "imageId": "msm-interior-table-001",
+    "groundTruthStyleGroup": "Minimal & Structured Modern"
+  },
+  {
+    "imageId": "ext-unsplash-Qe8eMrwTW5g",
+    "groundTruthStyleGroup": "Minimal & Structured Modern"
+  },
+  {
+    "imageId": "ext-pexels-6633454",
+    "groundTruthStyleGroup": "Minimal & Structured Modern"
+  },
+  {
+    "imageId": "ext-unsplash-URi_yR9qtgs",
+    "groundTruthStyleGroup": "Minimal & Structured Modern"
+  },
+  {
+    "imageId": "ext-unsplash-r8YXsXoRLI4",
+    "groundTruthStyleGroup": "Minimal & Structured Modern"
+  },
+  {
+    "imageId": "msm-interior-wall-paint-001",
+    "groundTruthStyleGroup": "Minimal & Structured Modern"
+  },
+  {
+    "imageId": "ext-unsplash-Cmq9Sy5PW18",
+    "groundTruthStyleGroup": "Minimal & Structured Modern"
+  },
+  {
+    "imageId": "ext-unsplash-Uxqlfigh6oE",
+    "groundTruthStyleGroup": "Minimal & Structured Modern"
+  },
+  {
+    "imageId": "msm-outfit-accessory-001",
+    "groundTruthStyleGroup": "Minimal & Structured Modern"
+  },
+  {
+    "imageId": "msm-main-002",
+    "groundTruthStyleGroup": "Minimal & Structured Modern"
+  },
+  {
+    "imageId": "msm-main-001",
+    "groundTruthStyleGroup": "Minimal & Structured Modern"
+  },
+  {
+    "imageId": "msm-main-003",
+    "groundTruthStyleGroup": "Minimal & Structured Modern"
+  },
+  {
+    "imageId": "msm-main-005",
+    "groundTruthStyleGroup": "Minimal & Structured Modern"
+  },
+  {
+    "imageId": "msm-main-004",
+    "groundTruthStyleGroup": "Minimal & Structured Modern"
+  },
+  {
+    "imageId": "retro-architecture-staircase-001",
+    "groundTruthStyleGroup": "Retro & Nostalgia"
+  },
+  {
+    "imageId": "retro-architecture-entrance-001",
+    "groundTruthStyleGroup": "Retro & Nostalgia"
+  },
+  {
+    "imageId": "retro-graphic-editorial-001",
+    "groundTruthStyleGroup": "Retro & Nostalgia"
+  },
+  {
+    "imageId": "retro-graphic-poster-001",
+    "groundTruthStyleGroup": "Retro & Nostalgia"
+  },
+  {
+    "imageId": "retro-graphic-packaging-001",
+    "groundTruthStyleGroup": "Retro & Nostalgia"
+  },
+  {
+    "imageId": "retro-graphic-brand-001",
+    "groundTruthStyleGroup": "Retro & Nostalgia"
+  },
+  {
+    "imageId": "retro-graphic-001",
+    "groundTruthStyleGroup": "Retro & Nostalgia"
+  },
+  {
+    "imageId": "ext-unsplash-fqo5zoaM6iE",
+    "groundTruthStyleGroup": "Retro & Nostalgia"
+  },
+  {
+    "imageId": "retro-interior-table-001",
+    "groundTruthStyleGroup": "Retro & Nostalgia"
+  },
+  {
+    "imageId": "ext-unsplash-9uB_Fmx_QFM",
+    "groundTruthStyleGroup": "Retro & Nostalgia"
+  },
+  {
+    "imageId": "ext-unsplash-OSdMOpfDPwc",
+    "groundTruthStyleGroup": "Retro & Nostalgia"
+  },
+  {
+    "imageId": "retro-interior-lighting-001",
+    "groundTruthStyleGroup": "Retro & Nostalgia"
+  },
+  {
+    "imageId": "ext-unsplash-Z1k7uUMLHa8",
+    "groundTruthStyleGroup": "Retro & Nostalgia"
+  },
+  {
+    "imageId": "retro-interior-wall-paint-001",
+    "groundTruthStyleGroup": "Retro & Nostalgia"
+  },
+  {
+    "imageId": "retro-interior-001",
+    "groundTruthStyleGroup": "Retro & Nostalgia"
+  },
+  {
+    "imageId": "retro-outfit-001",
+    "groundTruthStyleGroup": "Retro & Nostalgia"
+  },
+  {
+    "imageId": "retro-outfit-top-001",
+    "groundTruthStyleGroup": "Retro & Nostalgia"
+  },
+  {
+    "imageId": "retro-outfit-bottom-001",
+    "groundTruthStyleGroup": "Retro & Nostalgia"
+  },
+  {
+    "imageId": "retro-outfit-accessory-001",
+    "groundTruthStyleGroup": "Retro & Nostalgia"
+  },
+  {
+    "imageId": "retro-outfit-dress-001",
+    "groundTruthStyleGroup": "Retro & Nostalgia"
+  },
+  {
+    "imageId": "ext-pexels-9247579",
+    "groundTruthStyleGroup": "Retro & Nostalgia"
+  },
+  {
+    "imageId": "ext-pexels-37525411",
+    "groundTruthStyleGroup": "Retro & Nostalgia"
+  },
+  {
+    "imageId": "ext-unsplash-4qb7W1J0HeA",
+    "groundTruthStyleGroup": "Retro & Nostalgia"
+  },
+  {
+    "imageId": "ext-unsplash-69qtfrnuyXk",
+    "groundTruthStyleGroup": "Retro & Nostalgia"
+  },
+  {
+    "imageId": "ext-unsplash-vAOV6fSUSlU",
+    "groundTruthStyleGroup": "Retro & Nostalgia"
+  },
+  {
+    "imageId": "retro-main-003",
+    "groundTruthStyleGroup": "Retro & Nostalgia"
+  },
+  {
+    "imageId": "retro-main-002",
+    "groundTruthStyleGroup": "Retro & Nostalgia"
+  },
+  {
+    "imageId": "retro-main-005",
+    "groundTruthStyleGroup": "Retro & Nostalgia"
+  },
+  {
+    "imageId": "retro-main-004",
+    "groundTruthStyleGroup": "Retro & Nostalgia"
+  },
+  {
+    "imageId": "retro-main-001",
+    "groundTruthStyleGroup": "Retro & Nostalgia"
+  },
+  {
+    "imageId": "ext-pexels-31622978",
+    "groundTruthStyleGroup": "Y2K & Internet Aesthetics"
+  },
+  {
+    "imageId": "y2k-architecture-window-001",
+    "groundTruthStyleGroup": "Y2K & Internet Aesthetics"
+  },
+  {
+    "imageId": "y2k-architecture-staircase-001",
+    "groundTruthStyleGroup": "Y2K & Internet Aesthetics"
+  },
+  {
+    "imageId": "y2k-architecture-entrance-001",
+    "groundTruthStyleGroup": "Y2K & Internet Aesthetics"
+  },
+  {
+    "imageId": "y2k-architecture-facade-001",
+    "groundTruthStyleGroup": "Y2K & Internet Aesthetics"
+  },
+  {
+    "imageId": "y2k-architecture-001",
+    "groundTruthStyleGroup": "Y2K & Internet Aesthetics"
+  },
+  {
+    "imageId": "ext-unsplash-SSi_Q-Tbk7E",
+    "groundTruthStyleGroup": "Y2K & Internet Aesthetics"
+  },
+  {
+    "imageId": "ext-unsplash-5iXoLMt1QCs",
+    "groundTruthStyleGroup": "Y2K & Internet Aesthetics"
+  },
+  {
+    "imageId": "ext-unsplash-QAoKB6gbSO8",
+    "groundTruthStyleGroup": "Y2K & Internet Aesthetics"
+  },
+  {
+    "imageId": "y2k-graphic-001",
+    "groundTruthStyleGroup": "Y2K & Internet Aesthetics"
+  },
+  {
+    "imageId": "y2k-graphic-poster-001",
+    "groundTruthStyleGroup": "Y2K & Internet Aesthetics"
+  },
+  {
+    "imageId": "y2k-graphic-brand-001",
+    "groundTruthStyleGroup": "Y2K & Internet Aesthetics"
+  },
+  {
+    "imageId": "y2k-graphic-packaging-001",
+    "groundTruthStyleGroup": "Y2K & Internet Aesthetics"
+  },
+  {
+    "imageId": "y2k-graphic-editorial-001",
+    "groundTruthStyleGroup": "Y2K & Internet Aesthetics"
+  },
+  {
+    "imageId": "ext-pexels-28408918",
+    "groundTruthStyleGroup": "Y2K & Internet Aesthetics"
+  },
+  {
+    "imageId": "ext-unsplash-zf2wGYkl01c",
+    "groundTruthStyleGroup": "Y2K & Internet Aesthetics"
+  },
+  {
+    "imageId": "y2k-interior-wall-paint-002",
+    "groundTruthStyleGroup": "Y2K & Internet Aesthetics"
+  },
+  {
+    "imageId": "y2k-interior-001",
+    "groundTruthStyleGroup": "Y2K & Internet Aesthetics"
+  },
+  {
+    "imageId": "y2k-interior-chair-001",
+    "groundTruthStyleGroup": "Y2K & Internet Aesthetics"
+  },
+  {
+    "imageId": "y2k-interior-table-001",
+    "groundTruthStyleGroup": "Y2K & Internet Aesthetics"
+  },
+  {
+    "imageId": "y2k-interior-wall-paint-001",
+    "groundTruthStyleGroup": "Y2K & Internet Aesthetics"
+  },
+  {
+    "imageId": "y2k-outfit-bottom-001",
+    "groundTruthStyleGroup": "Y2K & Internet Aesthetics"
+  },
+  {
+    "imageId": "y2k-outfit-top-001",
+    "groundTruthStyleGroup": "Y2K & Internet Aesthetics"
+  },
+  {
+    "imageId": "y2k-outfit-accessory-001",
+    "groundTruthStyleGroup": "Y2K & Internet Aesthetics"
+  },
+  {
+    "imageId": "y2k-outfit-001",
+    "groundTruthStyleGroup": "Y2K & Internet Aesthetics"
+  },
+  {
+    "imageId": "y2k-main-005",
+    "groundTruthStyleGroup": "Y2K & Internet Aesthetics"
+  },
+  {
+    "imageId": "y2k-main-004",
+    "groundTruthStyleGroup": "Y2K & Internet Aesthetics"
+  },
+  {
+    "imageId": "y2k-main-001",
+    "groundTruthStyleGroup": "Y2K & Internet Aesthetics"
+  },
+  {
+    "imageId": "y2k-main-003",
+    "groundTruthStyleGroup": "Y2K & Internet Aesthetics"
+  },
+  {
+    "imageId": "y2k-main-002",
+    "groundTruthStyleGroup": "Y2K & Internet Aesthetics"
+  },
+  {
+    "imageId": "ext-unsplash-WxZlhLmYVTc",
+    "groundTruthStyleGroup": "Decorative & Opulent Art"
+  },
+  {
+    "imageId": "doa-architecture-entrance-001",
+    "groundTruthStyleGroup": "Decorative & Opulent Art"
+  },
+  {
+    "imageId": "ext-pexels-10570301",
+    "groundTruthStyleGroup": "Decorative & Opulent Art"
+  },
+  {
+    "imageId": "ext-pexels-24706211",
+    "groundTruthStyleGroup": "Decorative & Opulent Art"
+  },
+  {
+    "imageId": "ext-pexels-12643849",
+    "groundTruthStyleGroup": "Decorative & Opulent Art"
+  },
+  {
+    "imageId": "ext-unsplash-_MOWMAzJO-I",
+    "groundTruthStyleGroup": "Decorative & Opulent Art"
+  },
+  {
+    "imageId": "ext-unsplash-Ptvnp2FntfE",
+    "groundTruthStyleGroup": "Decorative & Opulent Art"
+  },
+  {
+    "imageId": "doa-architecture-staircase-001",
+    "groundTruthStyleGroup": "Decorative & Opulent Art"
+  },
+  {
+    "imageId": "doa-architecture-window-001",
+    "groundTruthStyleGroup": "Decorative & Opulent Art"
+  },
+  {
+    "imageId": "doa-architecture-facade-001",
+    "groundTruthStyleGroup": "Decorative & Opulent Art"
+  },
+  {
+    "imageId": "doa-architecture-001",
+    "groundTruthStyleGroup": "Decorative & Opulent Art"
+  },
+  {
+    "imageId": "doa-graphic-brand-001",
+    "groundTruthStyleGroup": "Decorative & Opulent Art"
+  },
+  {
+    "imageId": "doa-graphic-001",
+    "groundTruthStyleGroup": "Decorative & Opulent Art"
+  },
+  {
+    "imageId": "doa-graphic-packaging-001",
+    "groundTruthStyleGroup": "Decorative & Opulent Art"
+  },
+  {
+    "imageId": "doa-graphic-poster-001",
+    "groundTruthStyleGroup": "Decorative & Opulent Art"
+  },
+  {
+    "imageId": "doa-graphic-editorial-001",
+    "groundTruthStyleGroup": "Decorative & Opulent Art"
+  },
+  {
+    "imageId": "ext-unsplash-KAEWWzVULzA",
+    "groundTruthStyleGroup": "Decorative & Opulent Art"
+  },
+  {
+    "imageId": "ext-pexels-9540764",
+    "groundTruthStyleGroup": "Decorative & Opulent Art"
+  },
+  {
+    "imageId": "ext-pexels-31554223",
+    "groundTruthStyleGroup": "Decorative & Opulent Art"
+  },
+  {
+    "imageId": "ext-unsplash-cG4RRWm8KqM",
+    "groundTruthStyleGroup": "Decorative & Opulent Art"
+  },
+  {
+    "imageId": "ext-unsplash-bdqDkt-NNjs",
+    "groundTruthStyleGroup": "Decorative & Opulent Art"
+  },
+  {
+    "imageId": "doa-interior-table-001",
+    "groundTruthStyleGroup": "Decorative & Opulent Art"
+  },
+  {
+    "imageId": "doa-interior-lighting-001",
+    "groundTruthStyleGroup": "Decorative & Opulent Art"
+  },
+  {
+    "imageId": "doa-interior-001",
+    "groundTruthStyleGroup": "Decorative & Opulent Art"
+  },
+  {
+    "imageId": "ext-pexels-37727585",
+    "groundTruthStyleGroup": "Decorative & Opulent Art"
+  },
+  {
+    "imageId": "ext-unsplash-70iWhG2zfgQ",
+    "groundTruthStyleGroup": "Decorative & Opulent Art"
+  },
+  {
+    "imageId": "doa-main-002",
+    "groundTruthStyleGroup": "Decorative & Opulent Art"
+  },
+  {
+    "imageId": "doa-main-001",
+    "groundTruthStyleGroup": "Decorative & Opulent Art"
+  },
+  {
+    "imageId": "doa-main-005",
+    "groundTruthStyleGroup": "Decorative & Opulent Art"
+  },
+  {
+    "imageId": "doa-main-004",
+    "groundTruthStyleGroup": "Decorative & Opulent Art"
+  },
+  {
+    "imageId": "ext-unsplash-q5KSwteaCzc",
+    "groundTruthStyleGroup": "Earth & Organic Humanism"
+  },
+  {
+    "imageId": "ext-unsplash-6jlf40srdBA",
+    "groundTruthStyleGroup": "Earth & Organic Humanism"
+  },
+  {
+    "imageId": "ext-unsplash-b_3LCulEnmw",
+    "groundTruthStyleGroup": "Earth & Organic Humanism"
+  },
+  {
+    "imageId": "eoh-architecture-001",
+    "groundTruthStyleGroup": "Earth & Organic Humanism"
+  },
+  {
+    "imageId": "eoh-architecture-staircase-001",
+    "groundTruthStyleGroup": "Earth & Organic Humanism"
+  },
+  {
+    "imageId": "eoh-architecture-facade-001",
+    "groundTruthStyleGroup": "Earth & Organic Humanism"
+  },
+  {
+    "imageId": "eoh-architecture-entrance-001",
+    "groundTruthStyleGroup": "Earth & Organic Humanism"
+  },
+  {
+    "imageId": "eoh-architecture-window-001",
+    "groundTruthStyleGroup": "Earth & Organic Humanism"
+  },
+  {
+    "imageId": "eoh-graphic-editorial-001",
+    "groundTruthStyleGroup": "Earth & Organic Humanism"
+  },
+  {
+    "imageId": "eoh-graphic-poster-001",
+    "groundTruthStyleGroup": "Earth & Organic Humanism"
+  },
+  {
+    "imageId": "eoh-interior-001",
+    "groundTruthStyleGroup": "Earth & Organic Humanism"
+  },
+  {
+    "imageId": "eoh-interior-lighting-001",
+    "groundTruthStyleGroup": "Earth & Organic Humanism"
+  },
+  {
+    "imageId": "eoh-interior-table-001",
+    "groundTruthStyleGroup": "Earth & Organic Humanism"
+  },
+  {
+    "imageId": "eoh-interior-chair-002",
+    "groundTruthStyleGroup": "Earth & Organic Humanism"
+  },
+  {
+    "imageId": "ext-pexels-3700245",
+    "groundTruthStyleGroup": "Earth & Organic Humanism"
+  },
+  {
+    "imageId": "ext-pexels-37625077",
+    "groundTruthStyleGroup": "Earth & Organic Humanism"
+  },
+  {
+    "imageId": "ext-pexels-7814445",
+    "groundTruthStyleGroup": "Earth & Organic Humanism"
+  },
+  {
+    "imageId": "ext-unsplash-5Nm6dUEwxa4",
+    "groundTruthStyleGroup": "Earth & Organic Humanism"
+  },
+  {
+    "imageId": "ext-unsplash-Xq8XrA_LM7U",
+    "groundTruthStyleGroup": "Earth & Organic Humanism"
+  },
+  {
+    "imageId": "ext-unsplash-NRLYAOmqd_c",
+    "groundTruthStyleGroup": "Earth & Organic Humanism"
+  },
+  {
+    "imageId": "eoh-outfit-accessory-001",
+    "groundTruthStyleGroup": "Earth & Organic Humanism"
+  },
+  {
+    "imageId": "eoh-outfit-001",
+    "groundTruthStyleGroup": "Earth & Organic Humanism"
+  },
+  {
+    "imageId": "eoh-outfit-bottom-001",
+    "groundTruthStyleGroup": "Earth & Organic Humanism"
+  },
+  {
+    "imageId": "ext-pexels-7402618",
+    "groundTruthStyleGroup": "Earth & Organic Humanism"
+  },
+  {
+    "imageId": "ext-pexels-7402630",
+    "groundTruthStyleGroup": "Earth & Organic Humanism"
+  },
+  {
+    "imageId": "eoh-main-003",
+    "groundTruthStyleGroup": "Earth & Organic Humanism"
+  },
+  {
+    "imageId": "eoh-main-001",
+    "groundTruthStyleGroup": "Earth & Organic Humanism"
+  },
+  {
+    "imageId": "eoh-main-005",
+    "groundTruthStyleGroup": "Earth & Organic Humanism"
+  },
+  {
+    "imageId": "eoh-main-004",
+    "groundTruthStyleGroup": "Earth & Organic Humanism"
+  },
+  {
+    "imageId": "eoh-main-002",
+    "groundTruthStyleGroup": "Earth & Organic Humanism"
+  },
+  {
+    "imageId": "ftdp-architecture-001",
+    "groundTruthStyleGroup": "Future Tech & Digital Psychedelia"
+  },
+  {
+    "imageId": "ext-unsplash-G8APm-Q8zHQ",
+    "groundTruthStyleGroup": "Future Tech & Digital Psychedelia"
+  },
+  {
+    "imageId": "ext-unsplash-K6CRG490xiY",
+    "groundTruthStyleGroup": "Future Tech & Digital Psychedelia"
+  },
+  {
+    "imageId": "ext-unsplash-ssuecuRdR7s",
+    "groundTruthStyleGroup": "Future Tech & Digital Psychedelia"
+  },
+  {
+    "imageId": "ext-unsplash-DZ66ut4KQzs",
+    "groundTruthStyleGroup": "Future Tech & Digital Psychedelia"
+  },
+  {
+    "imageId": "ext-unsplash-xGc2QsidjHA",
+    "groundTruthStyleGroup": "Future Tech & Digital Psychedelia"
+  },
+  {
+    "imageId": "ext-unsplash-dEVcH3FsFF4",
+    "groundTruthStyleGroup": "Future Tech & Digital Psychedelia"
+  },
+  {
+    "imageId": "ftdp-architecture-entrance-001",
+    "groundTruthStyleGroup": "Future Tech & Digital Psychedelia"
+  },
+  {
+    "imageId": "ftdp-architecture-facade-001",
+    "groundTruthStyleGroup": "Future Tech & Digital Psychedelia"
+  },
+  {
+    "imageId": "ftdp-architecture-staircase-001",
+    "groundTruthStyleGroup": "Future Tech & Digital Psychedelia"
+  },
+  {
+    "imageId": "ftdp-architecture-window-001",
+    "groundTruthStyleGroup": "Future Tech & Digital Psychedelia"
+  },
+  {
+    "imageId": "ftdp-graphic-poster-001",
+    "groundTruthStyleGroup": "Future Tech & Digital Psychedelia"
+  },
+  {
+    "imageId": "ftdp-graphic-editorial-001",
+    "groundTruthStyleGroup": "Future Tech & Digital Psychedelia"
+  },
+  {
+    "imageId": "ftdp-graphic-001",
+    "groundTruthStyleGroup": "Future Tech & Digital Psychedelia"
+  },
+  {
+    "imageId": "ftdp-interior-lighting-001",
+    "groundTruthStyleGroup": "Future Tech & Digital Psychedelia"
+  },
+  {
+    "imageId": "ftdp-interior-table-001",
+    "groundTruthStyleGroup": "Future Tech & Digital Psychedelia"
+  },
+  {
+    "imageId": "ftdp-interior-chair-001",
+    "groundTruthStyleGroup": "Future Tech & Digital Psychedelia"
+  },
+  {
+    "imageId": "ext-unsplash-SXj6VzomxYY",
+    "groundTruthStyleGroup": "Future Tech & Digital Psychedelia"
+  },
+  {
+    "imageId": "ext-pexels-30203810",
+    "groundTruthStyleGroup": "Future Tech & Digital Psychedelia"
+  },
+  {
+    "imageId": "ftdp-outfit-001",
+    "groundTruthStyleGroup": "Future Tech & Digital Psychedelia"
+  },
+  {
+    "imageId": "ftdp-outfit-top-001",
+    "groundTruthStyleGroup": "Future Tech & Digital Psychedelia"
+  },
+  {
+    "imageId": "ftdp-outfit-dress-001",
+    "groundTruthStyleGroup": "Future Tech & Digital Psychedelia"
+  },
+  {
+    "imageId": "ftdp-outfit-accessory-001",
+    "groundTruthStyleGroup": "Future Tech & Digital Psychedelia"
+  },
+  {
+    "imageId": "ext-pexels-8107903",
+    "groundTruthStyleGroup": "Future Tech & Digital Psychedelia"
+  },
+  {
+    "imageId": "ext-pexels-8107825",
+    "groundTruthStyleGroup": "Future Tech & Digital Psychedelia"
+  },
+  {
+    "imageId": "ftdp-main-003",
+    "groundTruthStyleGroup": "Future Tech & Digital Psychedelia"
+  },
+  {
+    "imageId": "ftdp-main-005",
+    "groundTruthStyleGroup": "Future Tech & Digital Psychedelia"
+  },
+  {
+    "imageId": "ftdp-main-004",
+    "groundTruthStyleGroup": "Future Tech & Digital Psychedelia"
+  },
+  {
+    "imageId": "ftdp-main-002",
+    "groundTruthStyleGroup": "Future Tech & Digital Psychedelia"
+  },
+  {
+    "imageId": "ftdp-main-001",
+    "groundTruthStyleGroup": "Future Tech & Digital Psychedelia"
+  },
+  {
+    "imageId": "ext-unsplash-H3A3LSvQw8I",
+    "groundTruthStyleGroup": "Romantic & Pastoral Living"
+  },
+  {
+    "imageId": "ext-unsplash-NfQaA4dDd6Y",
+    "groundTruthStyleGroup": "Romantic & Pastoral Living"
+  },
+  {
+    "imageId": "ext-unsplash-Ih46KJdnB28",
+    "groundTruthStyleGroup": "Romantic & Pastoral Living"
+  },
+  {
+    "imageId": "ext-unsplash-bbRhgPvnmko",
+    "groundTruthStyleGroup": "Romantic & Pastoral Living"
+  },
+  {
+    "imageId": "ext-pexels-8098463",
+    "groundTruthStyleGroup": "Romantic & Pastoral Living"
+  },
+  {
+    "imageId": "rpl-architecture-window-001",
+    "groundTruthStyleGroup": "Romantic & Pastoral Living"
+  },
+  {
+    "imageId": "rpl-architecture-001",
+    "groundTruthStyleGroup": "Romantic & Pastoral Living"
+  },
+  {
+    "imageId": "rpl-graphic-poster-001",
+    "groundTruthStyleGroup": "Romantic & Pastoral Living"
+  },
+  {
+    "imageId": "ext-unsplash-Us1uzIxDbr4",
+    "groundTruthStyleGroup": "Romantic & Pastoral Living"
+  },
+  {
+    "imageId": "ext-unsplash-3yTft26WbtY",
+    "groundTruthStyleGroup": "Romantic & Pastoral Living"
+  },
+  {
+    "imageId": "ext-unsplash-aai7AgjLM3g",
+    "groundTruthStyleGroup": "Romantic & Pastoral Living"
+  },
+  {
+    "imageId": "rpl-graphic-brand-001",
+    "groundTruthStyleGroup": "Romantic & Pastoral Living"
+  },
+  {
+    "imageId": "ext-unsplash-Lsm2QGVYvs8",
+    "groundTruthStyleGroup": "Romantic & Pastoral Living"
+  },
+  {
+    "imageId": "ext-pexels-36153039",
+    "groundTruthStyleGroup": "Romantic & Pastoral Living"
+  },
+  {
+    "imageId": "ext-unsplash-L8GAsl76EJ8",
+    "groundTruthStyleGroup": "Romantic & Pastoral Living"
+  },
+  {
+    "imageId": "ext-unsplash-IAr9UTCaoqo",
+    "groundTruthStyleGroup": "Romantic & Pastoral Living"
+  },
+  {
+    "imageId": "ext-pexels-4589431",
+    "groundTruthStyleGroup": "Romantic & Pastoral Living"
+  },
+  {
+    "imageId": "rpl-outfit-dress-001",
+    "groundTruthStyleGroup": "Romantic & Pastoral Living"
+  },
+  {
+    "imageId": "rpl-outfit-top-001",
+    "groundTruthStyleGroup": "Romantic & Pastoral Living"
+  },
+  {
+    "imageId": "rpl-outfit-bottom-001",
+    "groundTruthStyleGroup": "Romantic & Pastoral Living"
+  },
+  {
+    "imageId": "rpl-outfit-001",
+    "groundTruthStyleGroup": "Romantic & Pastoral Living"
+  },
+  {
+    "imageId": "ext-pexels-13102285",
+    "groundTruthStyleGroup": "Romantic & Pastoral Living"
+  },
+  {
+    "imageId": "ext-unsplash-qVaUlDiRRv8",
+    "groundTruthStyleGroup": "Romantic & Pastoral Living"
+  },
+  {
+    "imageId": "ext-unsplash-RtG6kz48FyQ",
+    "groundTruthStyleGroup": "Romantic & Pastoral Living"
+  },
+  {
+    "imageId": "ext-unsplash-9SkwDbRl2yo",
+    "groundTruthStyleGroup": "Romantic & Pastoral Living"
+  },
+  {
+    "imageId": "rpl-main-002",
+    "groundTruthStyleGroup": "Romantic & Pastoral Living"
+  },
+  {
+    "imageId": "rpl-main-003",
+    "groundTruthStyleGroup": "Romantic & Pastoral Living"
+  },
+  {
+    "imageId": "rpl-main-001",
+    "groundTruthStyleGroup": "Romantic & Pastoral Living"
+  },
+  {
+    "imageId": "rpl-main-005",
+    "groundTruthStyleGroup": "Romantic & Pastoral Living"
+  },
+  {
+    "imageId": "rpl-main-004",
+    "groundTruthStyleGroup": "Romantic & Pastoral Living"
+  },
+  {
+    "imageId": "syc-architecture-staircase-001",
+    "groundTruthStyleGroup": "Street & Youth Culture"
+  },
+  {
+    "imageId": "syc-architecture-window-001",
+    "groundTruthStyleGroup": "Street & Youth Culture"
+  },
+  {
+    "imageId": "ext-pexels-7946136",
+    "groundTruthStyleGroup": "Street & Youth Culture"
+  },
+  {
+    "imageId": "syc-architecture-001",
+    "groundTruthStyleGroup": "Street & Youth Culture"
+  },
+  {
+    "imageId": "ext-unsplash-NzZih4lcCdw",
+    "groundTruthStyleGroup": "Street & Youth Culture"
+  },
+  {
+    "imageId": "ext-pexels-7946178",
+    "groundTruthStyleGroup": "Street & Youth Culture"
+  },
+  {
+    "imageId": "syc-graphic-editorial-001",
+    "groundTruthStyleGroup": "Street & Youth Culture"
+  },
+  {
+    "imageId": "syc-graphic-001",
+    "groundTruthStyleGroup": "Street & Youth Culture"
+  },
+  {
+    "imageId": "syc-graphic-poster-001",
+    "groundTruthStyleGroup": "Street & Youth Culture"
+  },
+  {
+    "imageId": "ext-unsplash-7lraYDhz7eY",
+    "groundTruthStyleGroup": "Street & Youth Culture"
+  },
+  {
+    "imageId": "ext-unsplash-dNvY4ufMAwI",
+    "groundTruthStyleGroup": "Street & Youth Culture"
+  },
+  {
+    "imageId": "ext-unsplash-uymG7UVPXpI",
+    "groundTruthStyleGroup": "Street & Youth Culture"
+  },
+  {
+    "imageId": "syc-interior-chair-001",
+    "groundTruthStyleGroup": "Street & Youth Culture"
+  },
+  {
+    "imageId": "syc-interior-wall-paint-001",
+    "groundTruthStyleGroup": "Street & Youth Culture"
+  },
+  {
+    "imageId": "syc-interior-table-001",
+    "groundTruthStyleGroup": "Street & Youth Culture"
+  },
+  {
+    "imageId": "ext-pexels-5657430",
+    "groundTruthStyleGroup": "Street & Youth Culture"
+  },
+  {
+    "imageId": "ext-pexels-10120991",
+    "groundTruthStyleGroup": "Street & Youth Culture"
+  },
+  {
+    "imageId": "ext-unsplash-jn00Xve-rWY",
+    "groundTruthStyleGroup": "Street & Youth Culture"
+  },
+  {
+    "imageId": "ext-pexels-1006230",
+    "groundTruthStyleGroup": "Street & Youth Culture"
+  },
+  {
+    "imageId": "ext-unsplash-lAxv9rMj0pY",
+    "groundTruthStyleGroup": "Street & Youth Culture"
+  },
+  {
+    "imageId": "ext-pexels-8353371",
+    "groundTruthStyleGroup": "Street & Youth Culture"
+  },
+  {
+    "imageId": "syc-outfit-accessory-001",
+    "groundTruthStyleGroup": "Street & Youth Culture"
+  },
+  {
+    "imageId": "ext-pexels-7946225",
+    "groundTruthStyleGroup": "Street & Youth Culture"
+  },
+  {
+    "imageId": "syc-outfit-001",
+    "groundTruthStyleGroup": "Street & Youth Culture"
+  },
+  {
+    "imageId": "syc-outfit-top-001",
+    "groundTruthStyleGroup": "Street & Youth Culture"
+  },
+  {
+    "imageId": "syc-main-001",
+    "groundTruthStyleGroup": "Street & Youth Culture"
+  },
+  {
+    "imageId": "syc-main-005",
+    "groundTruthStyleGroup": "Street & Youth Culture"
+  },
+  {
+    "imageId": "syc-main-003",
+    "groundTruthStyleGroup": "Street & Youth Culture"
+  },
+  {
+    "imageId": "syc-main-002",
+    "groundTruthStyleGroup": "Street & Youth Culture"
+  },
+  {
+    "imageId": "syc-main-004",
+    "groundTruthStyleGroup": "Street & Youth Culture"
+  }
+]
