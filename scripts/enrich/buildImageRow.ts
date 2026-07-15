@@ -13,7 +13,8 @@ export interface ImageRow {
   attribution: string;
   confidence: { styleGroup: number; medium: number; subMedium: number };
   needs_review: { styleGroup: boolean; medium: boolean; subMedium: boolean };
-  embedding: number[];
+  // GATE_MODE=off 抓圖時不算 embedding（衝量模式），欄位留空、之後 backfill:embeddings 補。
+  embedding: number[] | null;
 }
 
 const GALLERY_LABEL: Record<ImageSource, string> = {
@@ -25,7 +26,7 @@ export function buildImageRow(
   classification: ClassificationResult,
   palette: string[],
   meta: GalleryMeta,
-  embedding: number[]
+  embedding: number[] | null
 ): ImageRow {
   return {
     id: `ext-${meta.source}-${meta.externalId}`,

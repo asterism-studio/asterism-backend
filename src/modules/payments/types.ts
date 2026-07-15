@@ -1,3 +1,6 @@
+import type Stripe from 'stripe'
+
+import type { Prisma } from '../../generated/prisma/client.js'
 import type { PaymentRecord } from '../consultation/types.js'
 
 export interface StripePrice {
@@ -55,3 +58,37 @@ export interface CreatePaymentCheckoutDependencies {
   cancelUrl: string
   now(): Date
 }
+
+export interface RecordStripeEventInput {
+  stripeEventId: string
+  eventType: string
+  payload: Prisma.InputJsonValue
+}
+
+export interface ProcessStripeEventInput {
+  stripeEventId: string
+  eventType: string
+  transition: 'completed' | 'expired' | null
+  sessionId: string | null
+  paymentIntentId: string | null
+  processedAt: Date
+}
+
+export interface StripeWebhookRepository {
+  recordOrResumeEvent(input: RecordStripeEventInput): Promise<boolean>
+  processEvent(input: ProcessStripeEventInput): Promise<void>
+  recordProcessingError(
+    stripeEventId: string,
+    reason: string
+  ): Promise<void>
+}
+
+export interface CreateStripeWebhookDependencies {
+  repository: StripeWebhookRepository
+  now(): Date
+}
+
+export type StripeWebhookHandler = (
+  event: Stripe.Event,
+  payload: Prisma.InputJsonValue
+) => Promise<void>
