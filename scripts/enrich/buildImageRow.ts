@@ -13,6 +13,7 @@ export interface ImageRow {
   attribution: string;
   confidence: { styleGroup: number; medium: number; subMedium: number };
   needs_review: { styleGroup: boolean; medium: boolean; subMedium: boolean };
+  // GATE_MODE=off 抓圖時不算 embedding（衝量模式），欄位留空、之後 backfill:embeddings 補。
   embedding: number[] | null;
 }
 

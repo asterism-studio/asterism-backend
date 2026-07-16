@@ -13,15 +13,10 @@
     "db:format": "prisma format",
     "db:migrate": "prisma migrate dev",
     "enrich:images": "tsx scripts/enrich/index.ts",
-    "backfill:embeddings": "tsx scripts/backfillImageEmbeddings.ts",
+    "calibrate:gate": "tsx scripts/calibrateRelevanceGate.ts",
     "reclassify:submedium": "tsx scripts/reclassifySubMedium.ts",
     "recompute:needs-review": "tsx scripts/recomputeNeedsReview.ts",
-    "compute:style-anchors": "tsx scripts/computeStyleGroupAnchors.ts",
-    "compute:gate-anchors": "tsx scripts/computeGatePromptAnchors.ts",
-    "calibrate:gate": "tsx scripts/calibrateRelevanceGate.ts",
-    "selfcheck:enrich": "tsx scripts/enrich/selfcheck.ts",
-    "collect:gate-eval": "tsx scripts/collectGateEvalSet.ts",
-    "eval:domain": "tsx scripts/evalDomainGate.ts"
+    "selfcheck:enrich": "tsx scripts/enrich/selfcheck.ts"
   },
   "keywords": [],
   "author": "",
