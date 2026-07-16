@@ -76,11 +76,11 @@ async function main(): Promise<void> {
         for (const meta of [...pexelsResults, ...unsplashResults]) {
           // 單張失敗（抓不到圖／取色失敗／CLIP 無法處理）只跳過該張，不拖累整批。
           try {
-            // gate：先算圖片 embedding 對 gate prompt 的 cosine，低於門檻視為不相關。
-            // 只算來比對、不入庫（本管線不存 embedding），過門檻才跑 classify/palette。
+            // GATE_MODE=off 時 embedder 是 null，完全不算 embedding（省效能）；
+            // 否則算一次，gate 判斷跟入庫存值共用同一個向量，不重複跑 CLIP。
+            const embedding = embedder ? await embedder.embedImage(meta.url) : null;
             if (GATE_MODE !== 'off') {
-              const embedding = await embedder!.embedImage(meta.url);
-              const relevance = dot(embedding, gateVector!);
+              const relevance = dot(embedding!, gateVector!);
               if (relevance < RELEVANCE_THRESHOLD) {
                 gateFlagged += 1;
                 console.log(
@@ -94,7 +94,6 @@ async function main(): Promise<void> {
             }
             const classification = await classifyImage(scorer, meta.url);
             const palette = await extractPalette(meta.url);
-            const embedding = await embedder.embedImage(meta.url);
             groupRows.push(buildImageRow(classification, palette, meta, embedding));
           } catch (error) {
             skipped += 1;

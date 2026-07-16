@@ -22,7 +22,7 @@ export async function insertImageRows(pool: Pool, rows: ImageRow[]): Promise<num
         row.attribution,
         JSON.stringify(row.confidence),
         JSON.stringify(row.needs_review),
-        `[${row.embedding.join(',')}]`
+        row.embedding ? `[${row.embedding.join(',')}]` : null
       ]
     );
     inserted += result.rowCount ?? 0;

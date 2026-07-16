@@ -13,7 +13,7 @@ export interface ImageRow {
   attribution: string;
   confidence: { styleGroup: number; medium: number; subMedium: number };
   needs_review: { styleGroup: boolean; medium: boolean; subMedium: boolean };
-  embedding: number[];
+  embedding: number[] | null;
 }
 
 const GALLERY_LABEL: Record<ImageSource, string> = {
@@ -25,7 +25,7 @@ export function buildImageRow(
   classification: ClassificationResult,
   palette: string[],
   meta: GalleryMeta,
-  embedding: number[]
+  embedding: number[] | null
 ): ImageRow {
   return {
     id: `ext-${meta.source}-${meta.externalId}`,
