@@ -11,6 +11,7 @@ export interface ImageRow {
   sub_medium: string;
   color_palette: string[];
   attribution: string;
+  source_url: string;
   confidence: { styleGroup: number; medium: number; subMedium: number };
   needs_review: { styleGroup: boolean; medium: boolean; subMedium: boolean };
   // GATE_MODE=off 抓圖時不算 embedding（衝量模式），欄位留空、之後 backfill:embeddings 補。
@@ -38,6 +39,7 @@ export function buildImageRow(
     sub_medium: classification.subMedium,
     color_palette: palette,
     attribution: `Photo by ${meta.photographer} / ${GALLERY_LABEL[meta.source]}`,
+    source_url: meta.sourceUrl,
     confidence: classification.confidence,
     needs_review: classification.needsReview,
     embedding

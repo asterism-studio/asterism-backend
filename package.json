@@ -15,6 +15,7 @@
     "enrich:images": "tsx scripts/enrich/index.ts",
     "calibrate:gate": "tsx scripts/calibrateRelevanceGate.ts",
     "reclassify:submedium": "tsx scripts/reclassifySubMedium.ts",
+    "backfill:source-url": "tsx scripts/backfillSourceUrl.ts",
     "recompute:needs-review": "tsx scripts/recomputeNeedsReview.ts",
     "selfcheck:enrich": "tsx scripts/enrich/selfcheck.ts"
   },
