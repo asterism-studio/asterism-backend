@@ -95,12 +95,15 @@ async function main(): Promise<void> {
   console.log(`\n成本加權門檻(誤擋成本 2x)：T = ${costBest.threshold.toFixed(2)}`);
   console.log(`TPR = ${(costBest.tpr * 100).toFixed(1)}%　FPR = ${(costBest.fpr * 100).toFixed(1)}%`);
 
-  const tp = scored.filter((s) => s.label && s.gateScore >= best.threshold).length;
+  // 產品實際採用的是成本加權門檻（見上）,Precision/Recall/Confusion Matrix/誤殺清單
+  // 這些診斷資訊要對照「真正上線的門檻」,不能算 Youden 門檻的、卻拿來當這次校準結果看。
+  const tp = scored.filter((s) => s.label && s.gateScore >= costBest.threshold).length;
   const fn = totalPositive - tp;
-  const fp = scored.filter((s) => !s.label && s.gateScore >= best.threshold).length;
+  const fp = scored.filter((s) => !s.label && s.gateScore >= costBest.threshold).length;
   const tn = totalNegative - fp;
   const precision = tp / (tp + fp);
   const recall = tp / (tp + fn);
+  console.log(`\n以下診斷對照成本加權門檻 T = ${costBest.threshold.toFixed(2)}（實際採用）：`);
   console.log(`Precision = ${(precision * 100).toFixed(1)}%　Recall = ${(recall * 100).toFixed(1)}%`);
   console.log('\nConfusion Matrix：');
   console.log(`              預測=設計圖   預測=離題`);
@@ -114,14 +117,14 @@ async function main(): Promise<void> {
     `T=0.22：TPR=${((tpAt022 / totalPositive) * 100).toFixed(1)}%　FPR=${((fpAt022 / totalNegative) * 100).toFixed(1)}%`
   );
 
-  console.log('\n被 Domain Gate 誤殺的正樣本（gate 分數 < 最佳門檻，人工看合不合理）：');
-  const missed = scored.filter((s) => s.label && s.gateScore < best.threshold);
+  console.log('\n被 Domain Gate 誤殺的正樣本（gate 分數 < 採用門檻，人工看合不合理）：');
+  const missed = scored.filter((s) => s.label && s.gateScore < costBest.threshold);
   for (const s of missed.slice(0, 40)) {
     console.log(`  ${s.id} | source=${s.source} | score=${s.gateScore.toFixed(3)} | 最像=${s.bestPrompt}`);
   }
   if (missed.length > 40) console.log(`  ……還有 ${missed.length - 40} 筆(正樣本改圖庫全量後誤殺清單會變長,只印最前 40)`);
-  console.log('\n漏放的負樣本（gate 分數 >= 最佳門檻，被誤判成設計圖）：');
-  for (const s of scored.filter((s) => !s.label && s.gateScore >= best.threshold)) {
+  console.log('\n漏放的負樣本（gate 分數 >= 採用門檻，被誤判成設計圖）：');
+  for (const s of scored.filter((s) => !s.label && s.gateScore >= costBest.threshold)) {
     console.log(`  ${s.id} | score=${s.gateScore.toFixed(3)} | 最像=${s.bestPrompt}`);
   }
 }
