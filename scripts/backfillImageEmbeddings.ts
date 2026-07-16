@@ -18,10 +18,14 @@ async function main(): Promise<void> {
 
     let total = 0;
     let skipped = 0;
+    let lastId = '';
     while (true) {
+      // id > lastId：keyset pagination，每批一定往前推進。單純用 embedding IS NULL
+      // 當條件會讓持續失敗的那張圖每輪都被重新撈到，永遠不會離開待補清單，腳本就卡死
+      // 在無窮迴圈；失敗的圖這次先跳過，下次重跑腳本時再試。
       const { rows } = await pool.query<{ id: string; url: string }>(
-        `SELECT id, url FROM images WHERE embedding IS NULL ORDER BY id LIMIT $1`,
-        [BATCH_SIZE]
+        `SELECT id, url FROM images WHERE embedding IS NULL AND id > $1 ORDER BY id LIMIT $2`,
+        [lastId, BATCH_SIZE]
       );
       if (rows.length === 0) break;
 
@@ -38,6 +42,7 @@ async function main(): Promise<void> {
           console.warn(`跳過 ${row.id}：`, (error as Error).message);
         }
       }
+      lastId = rows[rows.length - 1].id;
       console.log(`已處理一批（${rows.length} 張），累計完成 ${total} 張`);
     }
 
