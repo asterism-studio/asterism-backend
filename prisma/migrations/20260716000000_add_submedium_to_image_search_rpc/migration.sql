@@ -2,9 +2,12 @@
 
 -- 以圖搜圖結果卡片要顯示 subMedium 標籤（前端 asterism repo feat/image-search 已接好），
 -- search_similar_images 目前只回 style_group，缺 sub_medium，補進 RETURNS TABLE/SELECT。
--- CREATE OR REPLACE，簽名不變，對既有呼叫端相容。
+-- Postgres 不允許用 CREATE OR REPLACE 改變既有函式的回傳欄位結構（OUT 參數的 row type
+-- 不同），要先 DROP 再重建；輸入參數簽名不變，對既有呼叫端相容。
 
-CREATE OR REPLACE FUNCTION search_similar_images(
+DROP FUNCTION IF EXISTS search_similar_images(vector(512), int);
+
+CREATE FUNCTION search_similar_images(
   query_embedding vector(512),
   match_count int DEFAULT 4
 )
