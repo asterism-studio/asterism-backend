@@ -22,17 +22,37 @@ async function main(): Promise<void> {
 
     const embeddings = await embedder.embedTexts(entries.map((e) => e.text));
 
-    for (let i = 0; i < entries.length; i++) {
-      const { label } = entries[i];
-      const embedding = embeddings[i];
+    const client = await pool.connect();
+    try {
+      await client.query('BEGIN');
+      for (let i = 0; i < entries.length; i++) {
+        const { label } = entries[i];
+        const embedding = embeddings[i];
 
-      await pool.query(
-        `INSERT INTO classification_anchors (dimension, label, embedding)
-         VALUES ('gate', $1, $2::vector)
-         ON CONFLICT (dimension, label) DO UPDATE SET embedding = EXCLUDED.embedding`,
-        [label, `[${embedding.join(',')}]`]
+        await client.query(
+          `INSERT INTO classification_anchors (dimension, label, embedding)
+           VALUES ('gate', $1, $2::vector)
+           ON CONFLICT (dimension, label) DO UPDATE SET embedding = EXCLUDED.embedding`,
+          [label, `[${embedding.join(',')}]`]
+        );
+        console.log(`寫入 gate 錨點：${label}`);
+      }
+
+      // taxonomy 改過（styleGroup/medium 增刪或改名）留下的舊 label，這裡一併清掉，
+      // 避免幽靈錨點繼續參與 Domain Gate 的 max-cosine 比對。
+      const currentLabels = entries.map((e) => e.label);
+      const { rowCount } = await client.query(
+        `DELETE FROM classification_anchors WHERE dimension = 'gate' AND NOT (label = ANY($1))`,
+        [currentLabels]
       );
-      console.log(`寫入 gate 錨點：${label}`);
+      if (rowCount) console.log(`清除 ${rowCount} 筆已從 taxonomy 移除的舊 gate 錨點`);
+
+      await client.query('COMMIT');
+    } catch (error) {
+      await client.query('ROLLBACK');
+      throw error;
+    } finally {
+      client.release();
     }
 
     console.log(`完成 ${entries.length} 組 gate 錨點`);
