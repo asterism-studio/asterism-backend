@@ -6,6 +6,7 @@ import { Pool } from 'pg';
 // 各自的「原始頁面連結」欄位，導致既有列的 source_url 全部是 null，得回頭反查。
 // 只處理 id 符合 ext-{pexels|unsplash}-{externalId} 的列；本地/Asterism 自製圖沒有
 // 外部出處頁面，source_url 維持 null，不在這支腳本處理範圍內。
+// 已排除（excluded = true）的圖片不會被使用，不需要補 source_url，一併跳過。
 //   執行：npx tsx scripts/backfillSourceUrl.ts
 // 注意：Unsplash demo app 額度只有 50 requests/hour，圖多的話可能要跑好幾次——
 // 腳本只抓 source_url IS NULL 的列，可以重複執行到全部補完為止。
@@ -58,7 +59,7 @@ async function main(): Promise<void> {
 
   try {
     const { rows } = await pool.query<{ id: string }>(
-      `SELECT id FROM images WHERE source_url IS NULL AND id LIKE 'ext-%'`
+      `SELECT id FROM images WHERE source_url IS NULL AND id LIKE 'ext-%' AND excluded = false`
     );
 
     let updated = 0;
