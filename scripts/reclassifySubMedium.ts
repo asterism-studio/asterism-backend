@@ -1,7 +1,7 @@
 import 'dotenv/config';
 import { Pool } from 'pg';
 import type { Scorer } from './enrich/scorer';
-import { SUBMEDIUM_BY_MEDIUM } from './enrich/taxonomy';
+import { classifySubMedium } from './enrich/classify';
 
 // 一次性腳本：回填既有資料庫列的 subMedium。
 // 不能靠重跑 enrich/index.ts —— 它每次重新去 gallery 撈「新圖」，且 dbWriter 是
@@ -35,9 +35,9 @@ export interface SubMediumUpdate {
   needsReview: NeedsReview;
 }
 
-// 純邏輯：對單列只跑 subMedium 那層，合併進既有 confidence/needs_review JSONB
-// （保留 styleGroup/medium 欄位，只覆寫 subMedium，並把 subMedium 標記為待審）。
-// medium 不在候選表（理論上不會）或缺 medium 時回 null，由呼叫端略過。
+// 純邏輯：對單列只跑 subMedium 那層（走 classifySubMedium 共用邏輯，與 enrich 新抓圖一致），
+// 合併進既有 confidence/needs_review JSONB（保留 styleGroup/medium 欄位，只覆寫 subMedium，
+// 並把 subMedium 標記為待審）。medium 不在候選表或缺 medium 時回 null，由呼叫端略過。
 export async function reclassifyRowSubMedium(
   scorer: Scorer,
   row: ExistingRow
@@ -46,17 +46,14 @@ export async function reclassifyRowSubMedium(
     return null;
   }
 
-  const subLabels = SUBMEDIUM_BY_MEDIUM[row.medium];
-  if (!subLabels || subLabels.length === 0) {
+  const result = await classifySubMedium(scorer, row.medium, row.url);
+  if (!result) {
     return null;
   }
 
-  const subScores = await scorer.classify(row.url, subLabels);
-  const top = subScores[0];
-
   return {
-    subMedium: top.label,
-    confidence: { ...row.confidence, subMedium: top.score },
+    subMedium: result.label,
+    confidence: { ...row.confidence, subMedium: result.score },
     needsReview: { ...row.needsReview, subMedium: true }
   };
 }

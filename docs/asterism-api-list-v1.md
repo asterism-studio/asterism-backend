@@ -1,6 +1,6 @@
 # 顧問預約與金流 API Contract
 
-> 更新日期：2026-07-02  
+> 更新日期：2026-07-12
 > 狀態：Planned  
 > 版本：v1  
 > 適用範圍：顧問預約、Stripe 金流、顧問配對、預約查詢  
@@ -79,7 +79,7 @@ stripePaymentIntentId
 | `POST /api/v1/payments/stripe/webhook` | 必做 | Stripe signature | 接收 Stripe event 並同步付款狀態 |
 | `GET /api/v1/consultations/:bookingId` | 必做 | Required | 查詢單一預約與付款狀態 |
 | `GET /api/v1/consultations/me` | 建議 | Required | 查詢自己的預約紀錄 |
-| `GET /api/v1/consultations/availability` | 建議 | Required | 查詢指定日期可預約時段 |
+| `GET /api/v1/consultations/availability` | 建議 | Required | 查詢指定日期或月份的可預約時段 |
 | `GET /api/v1/consultants/match` | 視前端流程 | Required | 查詢前端顯示用媒合顧問 |
 | `GET /api/v1/consultants` | 可選 | Optional / Required | 顯示 active consultants 公開資料 |
 | `POST /api/v1/consultations/:bookingId/cancel` | 後續 | Required | 取消尚未付款或尚未完成的預約 |
@@ -368,7 +368,7 @@ bookingId=<uuid>
 
 ### 用途
 
-讓登入使用者查詢自己的預約紀錄。
+讓登入使用者查詢自己的預約紀錄，供「我的預約」頁面顯示日期時間軸、預約內容與完整預約列表。
 
 ### Auth
 
@@ -381,10 +381,20 @@ Authorization: Bearer <supabase_access_token>
 ### Query parameters
 
 ```txt
+scope=all|upcoming
 status=pending_payment|confirmed|payment_failed|canceled|completed
 limit=20
 cursor=...
 ```
+
+- `scope` optional，預設 `all`。
+- `scope=all` 可搭配 optional `status` 篩選。
+- `scope=upcoming` 固定只查 `confirmed`，不接受 `status`；`scope=upcoming&status=confirmed` 與 `scope=upcoming&status=pending_payment` 都回傳 `400 VALIDATION_ERROR`。
+- `scope=upcoming` 依 `Asia/Taipei` 判斷日期與 AM/PM 邊界：台北 12:00 前保留今天 AM/PM，12:00 起排除今天 AM、保留今天 PM；明天以後的 AM/PM 都保留。
+- `status` optional，僅在 `scope=all` 時用於篩選 booking status；`scope=upcoming` 不接受。
+- `limit` optional，預設 `20`，只接受 `1..50` 的整數。
+- `cursor` optional，用於 cursor-based pagination；無法解碼或欄位不合法時回傳 `400 VALIDATION_ERROR`。
+- query 使用 strict parsing；`scope`、`status`、`limit`、`cursor` 以外的 query parameter 回傳 `400 VALIDATION_ERROR`。
 
 ### 後端查詢條件
 
@@ -392,7 +402,13 @@ cursor=...
 profileId = currentAuthProfile.id
 ```
 
-不接受前端傳入 `profileId` 查詢。
+- `profileId` 必須由 auth context 取得，不接受前端傳入。
+- `scope=all` 時使用 optional `status`；`scope=upcoming` 時使用 `status = confirmed`，並排除台北當日已過的日期／AM 時段。
+- 預設依 `consultationDate ASC`、`timeSlot ASC`、`id ASC` 排序；`id` 是相同日期與時段時的唯一 tie-breaker。
+- cursor payload 包含 `version: 1`、`scope`、`scope=all` 時的 `status` filter、`consultationDate`、`timeSlot` 與 `id`；cursor 的 scope/status context 與目前 query 不一致時回傳 `400 VALIDATION_ERROR`。
+- 為維持既有 `scope=all` 分頁相容性，沒有 `scope` 欄位的舊 version 1 cursor 會視為 `scope=all`；legacy cursor 不可用於 `scope=upcoming`。
+- `timeSlot` 是 Prisma enum，repository 依 `am` / `pm` 明確展開 seek condition，不假設 enum 支援 `gt` / `lt` filter。
+- 列表 endpoint 只回傳頁面需要的摘要欄位，不直接沿用單筆詳情 `ConsultationBookingDetail`。
 
 ### Response
 
@@ -403,17 +419,24 @@ profileId = currentAuthProfile.id
     items: [
       {
         id: string
-        method: string
-        consultationDate: string
-        timeSlot: string
-        bookingStatus: string
-        paymentStatus: string
+        status:
+          | 'pending_payment'
+          | 'confirmed'
+          | 'payment_failed'
+          | 'canceled'
+          | 'completed'
+        method: 'online' | 'in_person'
+        consultationDate: string // YYYY-MM-DD
+        timeSlot: 'am' | 'pm'
+        designField?: string
+        designFocus?: string
+        notes?: string
         consultant?: {
           displayName: string
           title: string
           avatarUrl?: string
         }
-        createdAt: string
+        createdAt: string // ISO 8601 datetime
       }
     ]
     nextCursor?: string
@@ -422,13 +445,47 @@ profileId = currentAuthProfile.id
 }
 ```
 
+### 欄位說明
+
+| 欄位 | 說明 |
+|---|---|
+| `id` | Booking ID。 |
+| `status` | 預約狀態，由後端 consultation service 維護。 |
+| `method` | 後端標準值，只回傳 `online` / `in_person`；前端負責轉成顯示文字。 |
+| `consultationDate` | 預約日期，格式為 `YYYY-MM-DD`。 |
+| `timeSlot` | 預約時段，只回傳 `am` / `pm`。 |
+| `designField` | 設計領域；若 booking 未提供則省略。 |
+| `designFocus` | 設計重點；若 booking 未提供則省略。 |
+| `notes` | 使用者備註；未提供時省略。 |
+| `consultant` | 已媒合顧問摘要；尚未媒合時省略。 |
+| `createdAt` | Booking 建立時間，ISO 8601 datetime。 |
+| `nextCursor` | 下一頁 cursor；沒有下一頁時省略。 |
+
+### 常見錯誤
+
+| 狀態碼 | Code | 情境 |
+|---:|---|---|
+| `400` | `VALIDATION_ERROR` | `scope` / `status` 組合、`limit` 或 `cursor` 格式錯誤 |
+| `401` | `UNAUTHORIZED` | 未登入或 token 無效 |
+| `404` | `PROFILE_NOT_FOUND` | 找不到對應 profile |
+
+### 注意事項
+
+- `GET /api/v1/consultations/me` 使用獨立列表 DTO，不直接定義為 `ConsultationBookingDetail[]`。
+- 預設 `scope=all` 維持完整紀錄行為；前端「即將到來」頁面應明確使用 `scope=upcoming`。
+- `scope=upcoming` 不包含 `pending_payment`、`payment_failed`、`canceled` 或 `completed`；日期或時段過期不會自動改寫 booking status。
+- `method`、`status`、`timeSlot` 回傳後端 enum 原始值，不回傳 `Online`、`In-Person` 等 UI 顯示文字。
+- Optional 欄位為 `null`、空字串或純空白時省略，不以空字串偽造資料；非空 `notes` 原始內容不由 mapper 改寫。
+- 列表需要顧問摘要時由此 API 一次回傳，不應讓前端針對每筆 booking 再呼叫 `GET /api/v1/consultations/:bookingId`。
+- `paymentStatus`、`amount`、`currency` 等付款資訊若目前列表 UI 不需要，第一版不回傳；需要時再明確擴充 contract，避免列表 response 持續膨脹。
+
 ---
 
 ## 9. `GET /api/v1/consultations/availability`
 
 ### 用途
 
-查詢指定日期的可預約時段，提供前端表單選擇 UX。
+查詢指定日期或整個月份的可預約時段，提供前端表單與月曆選擇 UX。
 
 ### Auth
 
@@ -440,7 +497,20 @@ profileId = currentAuthProfile.id
 date=YYYY-MM-DD
 ```
 
+或：
+
+```txt
+month=YYYY-MM
+```
+
+- `date` 與 `month` 二擇一，不可同時傳。
+- `date` 用於單日查詢，保留既有設計。
+- `month` 用於整月查詢，後端依 `YYYY-MM` 自行計算該月第一天與最後一天，不要求前端處理大小月或閏年。
+- `month` 必須是有效月份，例如 `2026-07`；`2026-13` 應回傳 `400 VALIDATION_ERROR`。
+
 ### Response
+
+單日查詢：
 
 ```ts
 {
@@ -462,11 +532,52 @@ date=YYYY-MM-DD
 }
 ```
 
+整月查詢：
+
+```ts
+{
+  success: true,
+  data: {
+    month: '2026-07'
+    startDate: '2026-07-01'
+    endDate: '2026-07-31'
+    days: [
+      {
+        date: '2026-07-01'
+        slots: [
+          {
+            timeSlot: 'am'
+            available: true
+          },
+          {
+            timeSlot: 'pm'
+            available: false
+          }
+        ]
+      }
+    ]
+  },
+  error: null
+}
+```
+
 ### 注意事項
 
 - availability API 只作為 UX 提示。
 - checkout API 仍必須再次檢查可用性。
 - DB partial unique index 仍是避免 double-booking 的最後防線。
+- 整月查詢應補齊該月所有日期；即使某天沒有已佔用時段，也應回傳該日的 `am` / `pm` 狀態。
+- 整月查詢不新增 `startDate` / `endDate` 自訂區間，避免前端承擔大小月計算與不必要的查詢彈性。
+
+### 必要測試
+
+- `date=2026-07-01` 保留既有單日 response shape。
+- `month=2026-07` 回傳 `2026-07-01` 到 `2026-07-31`。
+- `month=2026-04` 回傳 `2026-04-01` 到 `2026-04-30`。
+- `month=2028-02` 回傳 `2028-02-01` 到 `2028-02-29`。
+- `month=2027-02` 回傳 `2027-02-01` 到 `2027-02-28`。
+- `date` 與 `month` 同時傳應回傳 `400 VALIDATION_ERROR`。
+- 未傳 `date` / `month`、無效日期、無效月份都應回傳 `400 VALIDATION_ERROR`。
 
 ---
 

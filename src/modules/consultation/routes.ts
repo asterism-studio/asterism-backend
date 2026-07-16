@@ -8,13 +8,20 @@ import {
 } from '../../middleware/requireAuth.js'
 import { validateRequest } from '../../middleware/validateRequest.js'
 import {
+  availabilityQuerySchema,
   bookingIdSchema,
+  consultationListQuerySchema,
   createCheckoutSchema,
   idempotencyKeySchema
 } from './schema.js'
+import type { AvailabilityQuery } from './schema.js'
 import type {
   CheckoutRequest,
   CheckoutResult,
+  ConsultationAvailabilityRequest,
+  ConsultationAvailabilityResult,
+  ConsultationListRequest,
+  MyConsultationListResult,
   ConsultationDetailsRequest,
   ConsultationDetailsResult,
   CreateCheckoutInput
@@ -23,6 +30,12 @@ import type {
 interface ConsultationRouterDependencies {
   authVerifier: AuthVerifier
   checkout(request: CheckoutRequest): Promise<CheckoutResult>
+  getAvailability(
+    request: ConsultationAvailabilityRequest
+  ): Promise<ConsultationAvailabilityResult>
+  getMyConsultations(
+    request: ConsultationListRequest
+  ): Promise<MyConsultationListResult>
   getBooking(
     request: ConsultationDetailsRequest
   ): Promise<ConsultationDetailsResult>
@@ -76,6 +89,46 @@ const validateBookingId: RequestHandler = (req, res, next) => {
   next()
 }
 
+const validateAvailabilityQuery: RequestHandler = (req, res, next) => {
+  const result = availabilityQuerySchema.safeParse(req.query)
+
+  if (!result.success) {
+    throw new AppError(
+      400,
+      'VALIDATION_ERROR',
+      'Request validation failed.',
+      result.error.issues.map(({ code, message, path }) => ({
+        path: ['query', ...path],
+        code,
+        message
+      }))
+    )
+  }
+
+  res.locals.availabilityQuery = result.data
+  next()
+}
+
+const validateConsultationListQuery: RequestHandler = (req, res, next) => {
+  const result = consultationListQuerySchema.safeParse(req.query)
+
+  if (!result.success) {
+    throw new AppError(
+      400,
+      'VALIDATION_ERROR',
+      'Request validation failed.',
+      result.error.issues.map(({ code, message, path }) => ({
+        path: ['query', ...path],
+        code,
+        message
+      }))
+    )
+  }
+
+  res.locals.consultationListQuery = result.data
+  next()
+}
+
 export const createConsultationRouter = (
   dependencies: ConsultationRouterDependencies
 ): Router => {
@@ -118,6 +171,43 @@ export const createConsultationRouter = (
       const result = await dependencies.checkout(request)
 
       res.status(201).json({
+        success: true,
+        data: result,
+        error: null
+      })
+    }
+  )
+
+  router.get(
+    '/availability',
+    createRequireAuth(dependencies.authVerifier),
+    validateAvailabilityQuery,
+    async (_req, res) => {
+      const query = res.locals.availabilityQuery as AvailabilityQuery
+      const result = await dependencies.getAvailability({
+        ...query,
+        auth: res.locals.auth
+      })
+
+      res.json({
+        success: true,
+        data: result,
+        error: null
+      })
+    }
+  )
+
+  router.get(
+    '/me',
+    createRequireAuth(dependencies.authVerifier),
+    validateConsultationListQuery,
+    async (_req, res) => {
+      const result = await dependencies.getMyConsultations({
+        auth: res.locals.auth,
+        query: res.locals.consultationListQuery
+      })
+
+      res.json({
         success: true,
         data: result,
         error: null

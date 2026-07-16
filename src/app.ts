@@ -11,7 +11,9 @@ import { createSupabaseAuthVerifier } from './middleware/requireAuth.js'
 import { createConsultationRepository } from './modules/consultation/repository.js'
 import { createConsultationRouter } from './modules/consultation/routes.js'
 import {
+  createConsultationAvailabilityService,
   createConsultationCheckoutService,
+  createConsultationListService,
   createConsultationQueryService
 } from './modules/consultation/service.js'
 import {
@@ -66,6 +68,14 @@ const checkout = createConsultationCheckoutService({
 const consultationRouter = createConsultationRouter({
   authVerifier: createSupabaseAuthVerifier(supabase),
   checkout,
+  getAvailability: createConsultationAvailabilityService({
+    consultations: consultationRepository,
+    now: () => new Date()
+  }),
+  getMyConsultations: createConsultationListService({
+    consultations: consultationRepository,
+    now: () => new Date()
+  }),
   getBooking: createConsultationQueryService(consultationRepository),
   rateLimit: {
     windowMs: 10 * 60 * 1000,
