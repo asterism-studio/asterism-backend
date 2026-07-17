@@ -37,7 +37,8 @@ async function main(): Promise<void> {
   // try/finally 確保中途拋錯時 pool 仍會關閉，避免連線洩漏。
   try {
     const scorer = await createClipScorer();
-    // GATE_MODE=off 時完全不載入 CLIP embedding 模型，省下模型初始化與逐張推論的時間。
+    // GATE_MODE=off 時完全不載入 CLIP embedding 模型，省下模型初始化與逐張推論的時間
+    // （此時新圖 embedding 欄位留空，之後用 npm run backfill:embeddings 補）。
     const embedder = GATE_MODE === 'off' ? null : await createClipEmbedder();
     const textEmbedder = GATE_MODE === 'off' ? null : await createClipTextEmbedder();
     let gateFlagged = 0; // 算出來低於門檻的張數（不論是否真的刷掉）
@@ -76,11 +77,10 @@ async function main(): Promise<void> {
         for (const meta of [...pexelsResults, ...unsplashResults]) {
           // 單張失敗（抓不到圖／取色失敗／CLIP 無法處理）只跳過該張，不拖累整批。
           try {
-            // gate：先算圖片 embedding 對 gate prompt 的 cosine，低於門檻視為不相關。
-            // 只算來比對、不入庫（本管線不存 embedding），過門檻才跑 classify/palette。
-            if (GATE_MODE !== 'off') {
-              const embedding = await embedder!.embedImage(meta.url);
-              const relevance = dot(embedding, gateVector!);
+            // 圖片 embedding 一次算完兩用：gate 相關性比對 + 入庫存 pgvector（以圖搜圖用）。
+            const embedding = embedder ? await embedder.embedImage(meta.url) : null;
+            if (embedding && gateVector) {
+              const relevance = dot(embedding, gateVector);
               if (relevance < RELEVANCE_THRESHOLD) {
                 gateFlagged += 1;
                 console.log(
@@ -94,7 +94,7 @@ async function main(): Promise<void> {
             }
             const classification = await classifyImage(scorer, meta.url);
             const palette = await extractPalette(meta.url);
-            groupRows.push(buildImageRow(classification, palette, meta));
+            groupRows.push(buildImageRow(classification, palette, meta, embedding));
           } catch (error) {
             skipped += 1;
             console.warn(`[${styleGroup} / ${medium}] 跳過 ${meta.url}：`, (error as Error).message);
