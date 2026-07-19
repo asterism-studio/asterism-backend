@@ -1,4 +1,5 @@
 import type {
+  $Enums,
   Prisma,
   PrismaClient
 } from '../../generated/prisma/client.js'
@@ -45,6 +46,19 @@ const toPaymentRecord = (
 
 const toDatabaseDate = (date: string): Date =>
   new Date(`${date}T00:00:00.000Z`)
+
+// Bookings are auto-assigned to a consultant by design field. Unknown fields
+// stay unassigned. Each specialty currently has a single active consultant;
+// switch to a least-loaded pick if specialties ever gain multiple consultants.
+export const DESIGN_FIELD_SPECIALTY: Record<
+  string,
+  $Enums.ConsultantSpecialty
+> = {
+  styling: 'visual_styling',
+  graphic: 'concept_design',
+  interior: 'spatial',
+  architecture: 'spatial'
+}
 
 const buildConsultationListCursorWhere = (
   cursor: ConsultationListCursor
@@ -366,6 +380,14 @@ export const createConsultationRepository = (
         const draftExpiresAt = new Date(
           acceptedAt.getTime() + 30 * 60 * 1000
         )
+        const specialty = DESIGN_FIELD_SPECIALTY[command.input.designField]
+        const assignedConsultant = specialty
+          ? await transaction.consultant.findFirst({
+              where: { specialty, isActive: true },
+              orderBy: { createdAt: 'asc' },
+              select: { id: true }
+            })
+          : null
         const booking = await transaction.consultationBooking.upsert({
           where: {
             profileId_idempotencyKey: {
@@ -387,7 +409,8 @@ export const createConsultationRepository = (
             contactEmail: command.auth.email,
             notes: command.input.notes,
             paymentConsentAcceptedAt: acceptedAt,
-            status: 'pending_payment'
+            status: 'pending_payment',
+            consultantId: assignedConsultant?.id
           }
         })
         const payment = await transaction.consultationPayment.upsert({
