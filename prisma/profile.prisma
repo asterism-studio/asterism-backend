@@ -19,6 +19,7 @@ model Profile {
 
   moodboardFolders     MoodboardFolder[]
   consultationBookings ConsultationBooking[]
+  consultant           Consultant?
 
   @@map("profiles")
 }

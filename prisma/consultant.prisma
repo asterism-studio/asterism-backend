@@ -12,10 +12,12 @@ model Consultant {
   bio         String?              @db.Text
   specialty   ConsultantSpecialty?
   isActive    Boolean              @default(true) @map("is_active")
+  profileId   String?              @unique @map("profile_id") @db.Uuid
   createdAt   DateTime             @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt   DateTime             @updatedAt @map("updated_at") @db.Timestamptz(6)
 
   consultationBookings ConsultationBooking[]
+  profile              Profile?              @relation(fields: [profileId], references: [id], onDelete: SetNull)
 
   @@index([specialty])
   @@index([isActive])
