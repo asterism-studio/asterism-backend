@@ -176,6 +176,7 @@ export interface MyConsultationListRecord {
   designField: string | null
   designFocus: string | null
   notes: string | null
+  location: string | null
   createdAt: Date
   consultant: {
     displayName: string
@@ -193,6 +194,7 @@ export interface MyConsultationListItem {
   designField?: string
   designFocus?: string
   notes?: string
+  location?: string
   consultant?: {
     displayName: string
     title: string

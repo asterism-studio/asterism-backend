@@ -43,6 +43,7 @@ model ConsultationBooking {
   contactEmail             String                    @map("contact_email") @db.Text
   contactPhone             String?                   @map("contact_phone") @db.Text
   notes                    String?                   @db.Text
+  location                 String?                   @db.Text
   paymentConsentAcceptedAt DateTime                  @map("payment_consent_accepted_at") @db.Timestamptz(6)
   status                   ConsultationBookingStatus @default(pending_payment)
   createdAt                DateTime                  @default(now()) @map("created_at") @db.Timestamptz(6)

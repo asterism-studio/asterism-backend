@@ -51,6 +51,7 @@ const createRecord = (
     title: 'Design Consultant',
     avatarUrl: 'https://example.com/avatar.png'
   },
+  location: 'https://meet.example.com/abc-defg-hij',
   ...overrides
 })
 
@@ -415,6 +416,7 @@ test('consultation repository applies owner scope and explicit enum seek conditi
     designField: true,
     designFocus: true,
     notes: true,
+    location: true,
     createdAt: true,
     consultant: {
       select: {
@@ -629,4 +631,18 @@ test('consultation list route exposes service cursor and profile errors', async 
     assert.equal(response.status, 404)
     assert.equal((await response.json()).error.code, 'PROFILE_NOT_FOUND')
   })
+})
+
+test('list service surfaces booking location', async () => {
+  const service = createConsultationListService({
+    consultations: {
+      findProfile: async () => ({ id: profileId, displayName: 'User' }),
+      findMyBookings: async () => [createRecord()]
+    },
+    now: () => new Date('2099-06-01T00:00:00.000Z')
+  })
+
+  const result = await service({ auth, query: { scope: 'all', limit: 20 } })
+
+  assert.equal(result.items[0].location, 'https://meet.example.com/abc-defg-hij')
 })

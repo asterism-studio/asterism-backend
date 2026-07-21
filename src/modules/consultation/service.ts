@@ -328,6 +328,9 @@ const toConsultationListItem = (
     ? { designFocus: optionalText(record.designFocus) }
     : {}),
   ...(optionalText(record.notes) ? { notes: optionalText(record.notes) } : {}),
+  ...(optionalText(record.location)
+    ? { location: optionalText(record.location) }
+    : {}),
   ...(record.consultant
     ? {
         consultant: {

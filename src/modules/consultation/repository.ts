@@ -244,6 +244,7 @@ export const createConsultationRepository = (
         designField: true,
         designFocus: true,
         notes: true,
+        location: true,
         createdAt: true,
         consultant: {
           select: {
@@ -264,6 +265,7 @@ export const createConsultationRepository = (
       designField: booking.designField,
       designFocus: booking.designFocus,
       notes: booking.notes,
+      location: booking.location,
       createdAt: booking.createdAt,
       consultant: booking.consultant
     }))
