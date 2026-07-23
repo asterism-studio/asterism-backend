@@ -71,11 +71,12 @@ test('checkout schema enforces the documented trust boundary', () => {
   assert.equal(createCheckoutSchema.safeParse(validPayload).success, true)
   assert.equal(idempotencyKeySchema.safeParse(idempotencyKey).success, true)
   assert.equal(
-    createCheckoutSchema.parse({ ...validPayload, method: 'in-person' }).method,
+    createCheckoutSchema.parse({ ...validPayload, method: 'in_person' }).method,
     'in_person'
   )
 
   for (const payload of [
+    { ...validPayload, method: 'in-person' },
     { ...validPayload, amount: 500 },
     { ...validPayload, profile_id: auth.userId },
     { ...validPayload, userId: auth.userId },

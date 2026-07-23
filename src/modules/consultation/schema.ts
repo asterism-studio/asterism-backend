@@ -83,9 +83,7 @@ const optionalNotes = z
 
 export const createCheckoutSchema = z
   .object({
-    method: z
-      .enum(['online', 'in-person'])
-      .transform((value) => (value === 'in-person' ? 'in_person' : value)),
+    method: z.enum(['online', 'in_person']),
     consultationDate: dateOnlySchema('consultationDate'),
     timeSlot: z.enum(['am', 'pm']),
     designField: z.string().trim().min(1).max(80),
