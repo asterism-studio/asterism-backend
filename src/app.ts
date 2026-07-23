@@ -44,11 +44,11 @@ const paymentService = createPaymentCheckoutService({
   stripePriceId: env.stripeConsultationPriceId,
   successUrl: new URL(
     env.stripeCheckoutSuccessPath,
-    env.frontendUrl
+    env.frontendOrigin
   ).toString(),
   cancelUrl: new URL(
     env.stripeCheckoutCancelPath,
-    env.frontendUrl
+    env.frontendOrigin
   ).toString(),
   now: () => new Date()
 })
@@ -85,7 +85,7 @@ const consultationRouter = createConsultationRouter({
 
 app.use(
   cors({
-    origin: env.frontendOrigin,
+    origin: env.corsOrigins,
     credentials: true
   })
 )
