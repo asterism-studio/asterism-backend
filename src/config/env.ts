@@ -22,14 +22,37 @@ const requireEnv = (key: string): string => {
   return value
 }
 
-const parseOrigins = (value: string | undefined): string[] =>
-  (value ?? 'http://localhost:5173').split(',').map(s => s.trim())
+const parseFrontendOrigin = (
+  value: string | undefined,
+  nodeEnv: string
+): string => {
+  const origin = (value ?? 'http://localhost:5173').trim()
+
+  if (origin.includes(',')) {
+    throw new Error('FRONTEND_ORIGIN must contain exactly one origin.')
+  }
+
+  const url = new URL(origin)
+  if (nodeEnv === 'production' && url.hostname === 'localhost') {
+    throw new Error('FRONTEND_ORIGIN must not use localhost in production.')
+  }
+
+  return origin
+}
+
+const nodeEnv = process.env.NODE_ENV ?? 'development'
+const frontendOrigin = parseFrontendOrigin(
+  process.env.FRONTEND_ORIGIN,
+  nodeEnv
+)
 
 export const env = {
-  nodeEnv: process.env.NODE_ENV ?? 'development',
+  nodeEnv,
   port: parsePort(process.env.PORT),
-  frontendOrigin: parseOrigins(process.env.FRONTEND_ORIGIN),
-  frontendUrl: (process.env.FRONTEND_ORIGIN ?? 'http://localhost:5173').split(',')[0].trim(),
+  frontendOrigin,
+  corsOrigins: (process.env.CORS_ORIGINS || frontendOrigin)
+    .split(',')
+    .map(origin => origin.trim()),
   databaseUrl: requireEnv('DATABASE_URL'),
   supabaseUrl: requireEnv('SUPABASE_URL'),
   supabaseAnonKey: requireEnv('SUPABASE_ANON_KEY'),
